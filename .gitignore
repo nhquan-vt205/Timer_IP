@@ -9,3 +9,19 @@ work/
 
 # Project-local session memory (not versioned)
 memory_bank/
+
+# QuestaSim run outputs in sim/ (Makefile flow)
+sim/work/
+sim/log/
+sim/*.log
+sim/*.wlf
+sim/*.dbg
+sim/*.ini
+sim/transcript
+sim/run_test.v
+sim/*.ucdb
+sim/coverage/
+sim/covhtmlreport/
+sim/.Xil/
+sim/*.jou
+sim/*.str
