@@ -12,7 +12,7 @@ Project thiết kế RTL theo flow 5 stage, mỗi stage là một skill trong `.
 | S2 | `/rtl-s2-diagram <m> [--level L0\|L1\|L2] [--cloud …] [--block …] [--from … --to …]` | Module được nêu | `doc/diagram/<m>/` |
 | S3 | `/rtl-s3-rtl <m>` | Module được nêu | `rtl/<m>.v` (Verilog-2005) |
 | S4 | `/rtl-s4-vplan <m>` | Module được nêu (tùy chọn) | `doc/vplan/` |
-| S5 | `/rtl-s5-tb <m>` | Module được nêu (tùy chọn) | `tb/<m>/tb_<m>.v`, `sim/<m>/` |
+| S5 | `/rtl-s5-tb <m>` | Module được nêu (tùy chọn) | `tb/tb_<m>.v`, `tc/TC_<M>_<NNN>.v`, dòng trong `sim/rtl.f` + `sim/pat.list` |
 
 ## Tài liệu co giãn theo độ phức tạp phần cứng
 
@@ -70,4 +70,4 @@ Module `snake_case`; port `_i` / `_o`; active-low `_n`; thanh ghi `_q`, giá tr�
 
 ## Công cụ (dùng nếu có)
 
-Python 3 (bắt buộc cho script gate và lint diagram) · `verilator` / `iverilog` cho lint và mô phỏng (RTL S3 lint ở chế độ Verilog-2005: `iverilog -g2005`, `verilator --default-language 1364-2005`; testbench S5 cũng là Verilog-2005 `.v`, mô phỏng bằng `iverilog -g2005`).
+Python 3 (bắt buộc cho script gate và lint diagram) · QuestaSim (`vlog`/`vsim`, `~/opt/questasim/bin`) là simulator của project: S5 mô phỏng bằng môi trường `sim/` (`cd sim && make TESTNAME=TC_<M>_<NNN> all`, log `sim/log/<ID>.log`); RTL S3 lint được bằng `vlog -lint -pedanticerrors` (file `.v`, không `-sv`). `verilator` / `iverilog` dùng nếu có (RTL S3 lint ở chế độ Verilog-2005: `iverilog -g2005`, `verilator --default-language 1364-2005`). RTL và testbench đều là Verilog-2005 `.v`.
