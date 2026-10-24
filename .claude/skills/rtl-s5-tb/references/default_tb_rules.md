@@ -312,11 +312,11 @@ endtask
 
 ## 9. Chạy trong `sim/` (QuestaSim)
 
-Môi trường của người dùng (bản mẫu: `references/sim_env/`); S5 chỉ thêm dòng vào `rtl.f` và `pat.list`, không sửa file khác.
+Môi trường của người dùng (bản mẫu: `references/sim_env/`); S5 chỉ bỏ comment/thêm dòng trong `rtl.f` và `pat.list` (S1 ghi sẵn, nhóm theo nhánh `// --- <b> ---`), không sửa file khác.
 
-- `sim/rtl.f`: RTL cả cây của DUT, đường dẫn từ `sim/`, con trước cha sau (`../rtl/pulse_cnt.v`). Không thêm dòng trùng; không đưa RTL `.sv` cũ hay testbench vào đây.
+- `sim/rtl.f`: RTL cả cây của DUT, đường dẫn từ `sim/`, con trước cha sau (`../rtl/pulse_cnt.v`); dòng còn `//` là comment, không biên dịch. Không thêm dòng trùng; không đưa RTL `.sv` cũ hay testbench vào đây.
 - `sim/tb.f`: `../tb/${TB_NAME}.v` – `TB_NAME = tb_<m>` do Makefile suy từ `TESTNAME`.
-- `sim/pat.list`: một ID test mỗi dòng (`TC_PULSE_CNT_001`…), theo thứ tự vplan.
+- `sim/pat.list`: một ID test mỗi dòng (`TC_PULSE_CNT_001`…), theo thứ tự vplan, trong nhóm nhánh của module.
 
 ```bash
 cd sim

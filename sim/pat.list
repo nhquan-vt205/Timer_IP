@@ -1,3 +1,15 @@
 // Regression list: one test ID per line (tc/<ID>.v). Example:
 // TC_MY_MODULE_001
 // TC_MY_MODULE_002
+
+// --- apb_slave ---
+
+// --- register ---
+
+// --- cnt_ctrl ---
+
+// --- counter ---
+
+// --- interrupt ---
+
+// --- main ---

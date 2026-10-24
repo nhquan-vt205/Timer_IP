@@ -42,6 +42,8 @@ python3 .claude/skills/rtl-s5-tb/scripts/check_preconditions.py --stage 5 --modu
 
 Cần spec PASS, bảng port, RTL của module **và mọi module con** (để mô phỏng được), vplan. Mã thoát ≠ 0 → bỏ qua module đó, báo `[THIẾU]`. Test trong vplan còn `TBD` ở stimulus/mong đợi → bỏ qua test đó, liệt kê trong báo cáo.
 
+**Nhánh git** (mục "Nhánh git" của `CLAUDE.md`): sau gate, so nhánh hiện tại với nhánh `<b>` của `<m>` (cột `Branch` của `spec_status.md`; chế độ đơn `<m>`). Khác nhau → báo nhánh đúng và lệnh (`git checkout <b>`, hoặc `git checkout -b <b> main` nếu chưa có), chỉ chuyển khi người dùng đồng ý; không chạy S5 của module con trên `main`. Commit/push đầu ra chỉ khi người dùng yêu cầu; báo cáo cuối gợi ý lệnh commit và `git push -u origin <b>`.
+
 ## Bước 1 – Rule
 
 Đọc `tb_coding_rules/` (trừ README.md) nếu có; chỗ không nói tới hoặc thư mục trống → `references/default_tb_rules.md`.
@@ -71,8 +73,8 @@ Chi tiết và khung mẫu: `references/default_tb_rules.md`. Luật bắt buộ
 
 ## Bước 3 – Đăng ký và chạy
 
-1. `sim/rtl.f`: thêm RTL của module (và module con chưa có dòng), dạng `../rtl/<m>.v`, con trước cha sau; không thêm dòng đã có.
-2. `sim/pat.list`: thêm ID test case của module (`TC_<M>_<NNN>`), theo thứ tự vplan; không thêm dòng đã có.
+1. `sim/rtl.f`: S1 ghi sẵn mọi module ở dạng comment, nhóm theo nhánh (`// --- <b> ---`, cách nhau một dòng trống). Bỏ comment dòng RTL của cây `<m>` (`../rtl/<m>.v`, con trước cha sau); dòng chưa có → thêm vào nhóm của module. Không sửa dòng mở đầu nhóm, dòng trống và dòng của nhánh khác.
+2. `sim/pat.list`: thêm ID test case của module (`TC_<M>_<NNN>`, không comment, theo thứ tự vplan) vào cuối nhóm `// --- <b> ---` của module; không thêm dòng đã có.
 3. Chạy từng test của module, từ `sim/` (không cần `csh`):
 
    ```bash
