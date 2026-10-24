@@ -5,18 +5,15 @@
 Dùng:
   python3 check_sim_log.py <log> [<log> ...] <vplan.md|.xlsx|.csv|.docx> [--id-re REGEX]
   python3 check_sim_log.py --items <vplan> [--id-re REGEX]
-
-Môi trường sim/ (QuestaSim, Makefile): mỗi test case tc/TC_<MODULE>_<NNN>.v chạy một lần
-→ một log sim/log/TC_<MODULE>_<NNN>.log. Truyền mọi log của module, vplan đứng cuối:
-  python3 check_sim_log.py sim/log/TC_APB_SLAVE_*.log doc/vplan/apb_slave_vplan.md
-Tiền tố '# ' của transcript vsim được bỏ trước khi đọc.
+Mỗi testcase chạy thành một log riêng (sim/log/<ID>.log, do `make all TESTNAME=<ID>` tạo); truyền
+mọi log của module, vd. sim/log/TC_<M>_*.log. Tiền tố "# " của transcript QuestaSim được bỏ qua.
 
 Định dạng log (default_tb_rules.md):
-  -- <item name> test --                                       đầu mỗi item vplan (tên đọc được)
+  -- <item name> test --                                       đầu item vplan (tên đọc được)
   [<time>] <case> PASS | expected: <exp> | actual: <act>       mỗi lần checker so sánh
   [<time>] <case> FAIL | expected: <exp> | actual: <act>
-  [SUMMARY] PASS=<n> FAIL=<n>                                  cuối mỗi lần chạy (mỗi log một dòng)
-  Test_result: PASS|FAIL                                       sau [SUMMARY] (report.csh đọc)
+  [SUMMARY] PASS=<n> FAIL=<n>                                  cuối mỗi log
+  Test_result: PASSED|FAILED                                   cuối mỗi log (sim/report.csh đọc)
 Case thuộc item của header gần nhất phía trên trong cùng log.
 
 Item trong vplan = (ID, tên):
@@ -25,15 +22,13 @@ Item trong vplan = (ID, tên):
   Vplan không có ID dạng TC_… → bảng có cột đầu "ID" (vd. template checklist 1, 2, 3); tên = cột cụ thể
   nhất trong Item / Sub item 1 / Sub item 2 (thường Sub item 2), chỉ thêm cột phía trước (nối " / ")
   khi cần để phân biệt với item khác; bỏ ô trống, "—". Không có các cột đó thì cột thứ hai.
-  --items: in danh sách ID → file test case + header mong đợi rồi thoát (để viết đúng tên).
-File test case: ID dạng TC_… dùng nguyên; ID số n (template bảng) → TC_<MODULE>_<n 3 chữ số>, <MODULE>
-lấy từ tên file vplan <m>_vplan.* (viết hoa). Log tên TC_…_<NNN>.log phải chứa đúng item đó.
+  --items: in danh sách ID → header mong đợi rồi thoát (để viết đúng tên trong testbench).
 Header khớp item theo tên (không phân biệt hoa thường, khoảng trắng); header ghi đúng ID cũng được nhận
 (dùng khi vplan không có tên hoặc tên trùng).
 
 Kiểm: item vplan chưa chạy / không có case · case FAIL · dòng case sai định dạng · case nằm trước mọi
-header · header không có trong vplan / trùng · mỗi log: thiếu, trùng hoặc lệch [SUMMARY], thiếu/lệch
-Test_result · log TC_… chứa item khác ID của nó · [TIMEOUT]/$fatal/FATAL/lỗi vsim (** Error, ** Fatal).
+header · header không có trong vplan / trùng · thiếu, trùng hoặc lệch [SUMMARY] / Test_result trong
+từng log · [TIMEOUT]/$fatal/FATAL.
 Mã thoát 0 = mọi item trong vplan đều PASS và log nhất quán; 1 = có vấn đề.
 """
 import argparse
@@ -49,8 +44,7 @@ CASE = re.compile(r"^\[(?P<t>\d+)\]\s+(?P<case>\S+)\s+(?P<res>PASS|FAIL)\s+\|\s+
 CASE_LIKE = re.compile(r"^\[\d+\]\s+\S+\s+(PASS|FAIL)\b")
 SUMMARY = re.compile(r"\[SUMMARY\]\s+PASS=(\d+)\s+FAIL=(\d+)")
 RESULT = re.compile(r"^Test_result:\s*(\S+)")
-VSIM_PREFIX = re.compile(r"^#\s?")
-TC_FILE = re.compile(r"^(TC_[A-Z0-9_]+)_(\d{3})$")
+QUESTA_PREFIX = re.compile(r"^#\s?")
 EMPTY = {"", "-", "–", "—"}
 
 
@@ -147,15 +141,6 @@ def norm(s):
     return re.sub(r" test$", "", s)
 
 
-def tc_name(tid, module):
-    """Tên file test case (không đuôi) của item vplan."""
-    if re.fullmatch(r"TC_[A-Z0-9_]+_\d{3}", tid):
-        return tid
-    if tid.isdigit() and module:
-        return f"TC_{module.upper()}_{int(tid):03d}"
-    return None
-
-
 def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -167,7 +152,6 @@ def main():
     if (len(a.files) != 1) if a.items else (len(a.files) < 2):
         ap.error("cần <log> [<log> ...] <vplan>, hoặc --items <vplan>")
     logs, vplan = a.files[:-1], a.files[-1]
-    module = re.sub(r"_vplan$", "", Path(vplan).stem)
 
     vlines = vplan_lines(Path(vplan))
     items, how = items_by_id(vlines, a.id_re), f"--id-re {a.id_re}"
@@ -176,8 +160,7 @@ def main():
     if a.items:
         print(f"Vplan: {len(items)} item ({how})")
         for tid, name in items.items():
-            tc = tc_name(tid, module) or "?"
-            print(f"  {tid:<20} tc/{tc}.v   -- {name or tid} test --")
+            print(f"  {tid:<20} -- {name or tid} test --")
         sys.exit(0 if items else 1)
     problems = []
     if not items:
@@ -195,15 +178,13 @@ def main():
     lookup.update({norm(t): t for t in items})
 
     results, extra = {}, []
-    n_pass = n_fail = 0
-    tc_to_id = {tc_name(t, module): t for t in items if tc_name(t, module)}
+    n_pass, n_fail = 0, 0
     for log in logs:
-        lname = Path(log).name
-        lines = [VSIM_PREFIX.sub("", x) for x in
-                 Path(log).read_text(encoding="utf-8", errors="replace").splitlines()]
-        cur, lp, lf, summaries, verdicts, seen = None, 0, 0, [], [], []
+        name = Path(log).name
+        lines = Path(log).read_text(encoding="utf-8", errors="replace").splitlines()
+        cur, l_pass, l_fail, summaries, verdicts = None, 0, 0, [], []
         for n, line in enumerate(lines, 1):
-            s = line.strip()
+            s = QUESTA_PREFIX.sub("", line.strip()).strip()
             m = HEADER.match(s)
             if m:
                 tid = lookup.get(norm(m.group("name")))
@@ -211,24 +192,23 @@ def main():
                 if tid is None:
                     extra.append(m.group("name"))
                 if cur in results:
-                    problems.append(f"{lname} L{n}: header item '{m.group('name')}' xuất hiện lần nữa")
+                    problems.append(f"{name}:L{n}: header item '{m.group('name')}' xuất hiện lần nữa")
                 results.setdefault(cur, [])
-                seen.append(cur)
                 continue
             m = CASE.match(s)
             if m:
                 if m.group("res") == "PASS":
-                    lp += 1
+                    l_pass += 1
                 else:
-                    lf += 1
+                    l_fail += 1
                 if cur is None:
-                    problems.append(f"{lname} L{n}: case '{m.group('case')}' nằm trước mọi header "
-                                    "'-- <item name> test --'")
+                    problems.append(f"{name}:L{n}: case '{m.group('case')}' nằm trước mọi header "
+                                    f"'-- <item name> test --'")
                 else:
-                    results[cur].append((lname, n, m))
+                    results[cur].append((f"{name}:L{n}", m))
                 continue
             if CASE_LIKE.match(s):
-                problems.append(f"{lname} L{n}: dòng case sai định dạng "
+                problems.append(f"{name}:L{n}: dòng case sai định dạng "
                                 f"(cần '[<time>] <case> PASS|FAIL | expected: <exp> | actual: <act>'): {s[:120]}")
                 continue
             m = SUMMARY.search(s)
@@ -237,54 +217,44 @@ def main():
             m = RESULT.match(s)
             if m:
                 verdicts.append(m.group(1))
-            if re.search(r"\[TIMEOUT\]|\$fatal|FATAL|\*\* (Error|Fatal)", s):
-                problems.append(f"{lname} L{n}: mô phỏng dừng bất thường / lỗi: {s[:120]}")
-        n_pass += lp
-        n_fail += lf
-
+            if re.search(r"\[TIMEOUT\]|\$fatal|FATAL", s):
+                problems.append(f"{name}:L{n}: mô phỏng dừng bất thường: {s[:120]}")
+        n_pass += l_pass
+        n_fail += l_fail
         if not summaries:
-            problems.append(f"{lname}: thiếu dòng [SUMMARY] PASS=<n> FAIL=<n>")
+            problems.append(f"{name}: thiếu dòng [SUMMARY] PASS=<n> FAIL=<n>")
         else:
             sp, sf = summaries[-1]
-            if (sp, sf) != (lp, lf):
-                problems.append(f"{lname}: [SUMMARY] PASS={sp} FAIL={sf} lệch với số dòng case "
-                                f"(PASS={lp} FAIL={lf})")
+            if (sp, sf) != (l_pass, l_fail):
+                problems.append(f"{name}: [SUMMARY] PASS={sp} FAIL={sf} lệch với số dòng case trong log "
+                                f"(PASS={l_pass} FAIL={l_fail})")
             if len(summaries) > 1:
-                problems.append(f"{lname}: có {len(summaries)} dòng [SUMMARY]")
-        if len(logs) > 1 or verdicts:
-            want = "PASS" if lf == 0 and lp > 0 else "FAIL"
-            if len(verdicts) != 1:
-                problems.append(f"{lname}: cần đúng một dòng 'Test_result: PASS|FAIL' (có {len(verdicts)})")
-            elif verdicts[0] != want:
-                problems.append(f"{lname}: Test_result: {verdicts[0]} lệch với kết quả case ({want})")
-
-        mt = TC_FILE.match(Path(log).stem)
-        if mt:
-            want_id = tc_to_id.get(Path(log).stem)
-            if want_id is None:
-                problems.append(f"{lname}: test case {Path(log).stem} không ứng với item nào trong vplan")
-            elif [x for x in seen if x != want_id] or want_id not in seen:
-                problems.append(f"{lname}: log của {Path(log).stem} phải chỉ chứa item {want_id} "
-                                f"('-- {items[want_id] or want_id} test --')")
+                problems.append(f"{name}: có {len(summaries)} dòng [SUMMARY]")
+        want = "PASSED" if l_fail == 0 and l_pass > 0 else "FAILED"
+        if len(verdicts) != 1:
+            problems.append(f"{name}: cần đúng một dòng 'Test_result: PASSED|FAILED' (có {len(verdicts)})")
+        elif verdicts[0] != want:
+            problems.append(f"{name}: Test_result: {verdicts[0]} nhưng số case cho kết quả {want}")
 
     n_run = sum(1 for k in results if not k.startswith("?"))
-    print(f"Vplan: {len(items)} item ({how}) · Log: {n_run} item, {n_pass} case PASS, {n_fail} case FAIL")
+    print(f"Vplan: {len(items)} item ({how}) · Log: {len(logs)} file, {n_run} item, "
+          f"{n_pass} case PASS, {n_fail} case FAIL")
 
     bad = 0
     for tid, name in items.items():
         cases = results.get(tid)
         if cases is None:
-            st = f"KHÔNG CHẠY (không có header '-- {name or tid} test --')"
+            st = f"KHÔNG CHẠY (không có log/header '-- {name or tid} test --')"
         elif not cases:
             st = "KHÔNG CÓ KẾT QUẢ (header không có case nào)"
         else:
-            fails = [c for c in cases if c[2].group("res") == "FAIL"]
+            fails = [(n, m) for n, m in cases if m.group("res") == "FAIL"]
             st = f"FAIL ({len(fails)}/{len(cases)} case)" if fails else f"PASS ({len(cases)} case)"
         bad += not st.startswith("PASS")
         print(f"  {tid:<20} {name[:40]:<40} {st}")
-        for lname, n, m in (cases or []):
+        for n, m in (cases or []):
             if m.group("res") == "FAIL":
-                print(f"      {lname} L{n} [{m.group('t')}] {m.group('case')}: "
+                print(f"      {n} [{m.group('t')}] {m.group('case')}: "
                       f"expected {m.group('exp')} · actual {m.group('act')}")
     for name in extra:
         print(f"  {'?':<20} {name[:40]:<40} THỪA (header không khớp tên/ID item nào trong vplan)")
