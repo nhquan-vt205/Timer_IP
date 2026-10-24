@@ -6,3 +6,6 @@ sim/**/obj_dir/
 *.fsdb
 obj_dir/
 work/
+
+# Project-local session memory (not versioned)
+memory_bank/
