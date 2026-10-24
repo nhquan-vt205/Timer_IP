@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="700" viewBox="0 0 1040 700"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : apb_slave -->
+  <!-- stage  : 2 - diagram L2 (gate-level logic diagram) -->
+  <!-- source : doc/spec/architecture/apb_slave_spec.md -->
+  <desc id="model"><![CDATA[
+// sys_clk rising edge, sys_rst_n asynchronous active-low (not drawn: clock triangle / reset bubble)
+tim_pready = pready_q;
+tim_pslverr = pslverr_q;
+tim_prdata = rdata;
+[gate_acc]
+apb_acc = tim_psel & tim_penable;
+[gate_rdy]
+pready_d = apb_acc & ~pready_q;
+[reg_pready]
+pready_q <= pready_d @(rst=1'b0);
+[gate_err]
+pslverr_d = apb_acc & ~pready_q & tim_pwrite & wr_err;
+[reg_pslverr]
+pslverr_q <= pslverr_d @(rst=1'b0);
+[gate_wr]
+wr_en = ~pslverr_q & apb_acc & pready_q & tim_pwrite;
+[gate_rd]
+rd_en = apb_acc & pready_q & ~tim_pwrite;
+]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <!-- ===== inputs ===== -->
+  <text x="112" y="59" text-anchor="end">tim_psel</text>
+  <line class="w" x1="120" y1="55" x2="160" y2="55"/>
+  <text x="112" y="79" text-anchor="end">tim_penable</text>
+  <line class="w" x1="120" y1="75" x2="160" y2="75"/>
+  <text x="112" y="114" text-anchor="end">tim_pwrite</text>
+  <path class="w" d="M120,110 H290 V620 H412"/>
+  <text x="112" y="354" text-anchor="end">wr_err</text>
+  <line class="w" x1="120" y1="350" x2="420" y2="350"/>
+
+  <!-- ===== access phase: apb_acc ===== -->
+  <g id="gate_acc">
+    <path class="s" d="M160,40 H190 A25,25 0 0 1 190,90 H160 Z"/>
+  </g>
+  <path class="w" d="M215,65 H260 V580 H420"/>
+  <text x="218" y="58">apb_acc</text>
+
+  <!-- apb_acc trunk branches -->
+  <circle class="dot" cx="260" cy="165" r="4"/>
+  <line class="w" x1="260" y1="165" x2="420" y2="165"/>
+  <circle class="dot" cx="260" cy="290" r="4"/>
+  <line class="w" x1="260" y1="290" x2="420" y2="290"/>
+  <circle class="dot" cx="260" cy="480" r="4"/>
+  <line class="w" x1="260" y1="480" x2="420" y2="480"/>
+
+  <!-- tim_pwrite trunk branches -->
+  <circle class="dot" cx="290" cy="330" r="4"/>
+  <line class="w" x1="290" y1="330" x2="420" y2="330"/>
+  <circle class="dot" cx="290" cy="520" r="4"/>
+  <line class="w" x1="290" y1="520" x2="420" y2="520"/>
+
+  <!-- pready_q feedback trunk -->
+  <circle class="dot" cx="620" cy="175" r="4"/>
+  <path class="w" d="M620,175 V20 H320 V600 H420"/>
+  <text x="440" y="14">pready_q</text>
+  <circle class="dot" cx="320" cy="185" r="4"/>
+  <line class="w" x1="320" y1="185" x2="412" y2="185"/>
+  <circle class="dot" cx="320" cy="310" r="4"/>
+  <line class="w" x1="320" y1="310" x2="412" y2="310"/>
+  <circle class="dot" cx="320" cy="500" r="4"/>
+  <line class="w" x1="320" y1="500" x2="420" y2="500"/>
+
+  <!-- ===== wait state: pready_q ===== -->
+  <g id="gate_rdy">
+    <path class="s" d="M420,150 H450 A25,25 0 0 1 450,200 H420 Z"/>
+    <circle class="s" cx="416" cy="185" r="4"/>
+  </g>
+  <line class="w" x1="475" y1="175" x2="520" y2="175"/>
+  <g id="reg_pready">
+    <rect class="s" x="520" y="120" width="70" height="110"/>
+    <path class="w" d="M520,200 L534,210 L520,220"/>
+    <circle class="s" cx="555" cy="235" r="5"/>
+    <text x="555" y="179" text-anchor="middle">pready_q</text>
+  </g>
+  <text x="555" y="257" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="590" y1="175" x2="1000" y2="175"/>
+  <text x="1000" y="168" text-anchor="end">tim_pready</text>
+
+  <!-- ===== error response: pslverr_q ===== -->
+  <g id="gate_err">
+    <path class="s" d="M420,280 H450 A40,40 0 0 1 450,360 H420 Z"/>
+    <circle class="s" cx="416" cy="310" r="4"/>
+  </g>
+  <line class="w" x1="490" y1="320" x2="530" y2="320"/>
+  <g id="reg_pslverr">
+    <rect class="s" x="530" y="265" width="70" height="110"/>
+    <path class="w" d="M530,345 L544,355 L530,365"/>
+    <circle class="s" cx="565" cy="380" r="5"/>
+    <text x="565" y="324" text-anchor="middle">pslverr_q</text>
+  </g>
+  <text x="565" y="402" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="600" y1="320" x2="1000" y2="320"/>
+  <text x="1000" y="313" text-anchor="end">tim_pslverr</text>
+
+  <!-- pslverr_q feedback to write enable -->
+  <circle class="dot" cx="640" cy="320" r="4"/>
+  <path class="w" d="M640,320 V425 H390 V460 H412"/>
+  <text x="400" y="419">pslverr_q</text>
+
+  <!-- ===== write enable ===== -->
+  <g id="gate_wr">
+    <path class="s" d="M420,450 H450 A40,40 0 0 1 450,530 H420 Z"/>
+    <circle class="s" cx="416" cy="460" r="4"/>
+  </g>
+  <line class="w" x1="490" y1="490" x2="1000" y2="490"/>
+  <text x="1000" y="483" text-anchor="end">wr_en</text>
+
+  <!-- ===== read enable ===== -->
+  <g id="gate_rd">
+    <path class="s" d="M420,570 H450 A30,30 0 0 1 450,630 H420 Z"/>
+    <circle class="s" cx="416" cy="620" r="4"/>
+  </g>
+  <line class="w" x1="480" y1="600" x2="1000" y2="600"/>
+  <text x="1000" y="593" text-anchor="end">rd_en</text>
+
+  <!-- ===== read data pass-through ===== -->
+  <text x="112" y="674" text-anchor="end">rdata[31:0]</text>
+  <line class="w" x1="120" y1="670" x2="1000" y2="670"/>
+  <text x="1000" y="663" text-anchor="end">tim_prdata[31:0]</text>
+</svg>
