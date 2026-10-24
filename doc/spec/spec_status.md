@@ -4,14 +4,14 @@ STATUS: PASS
 Input: doc/spec/source/Timer_Design_Specification_Advanced_VI_preview.pdf
 
 ## Module list
-| Module | Parent | Type | Level | Function |
-| --- | --- | --- | --- | --- |
-| `timer_top` | – | top | L0 | Timer IP top |
-| `apb_slave` | `timer_top` | leaf | L2 | APB protocol: wait state, error response, wr_en/rd_en |
-| `register` | `timer_top` | leaf | L1 | Address decode, configuration registers, wr_err, read mux |
-| `cnt_ctrl` | `timer_top` | leaf | L2 | Count enable (divider), halt, TIM_EN falling-edge clear |
-| `counter` | `timer_top` | leaf | L2 | 64-bit up counter {TDR1, TDR0} |
-| `interrupt` | `timer_top` | leaf | L2 | Compare, INT_ST, tim_int |
+| Module | Parent | Type | Level | Function | Branch |
+| --- | --- | --- | --- | --- | --- |
+| `timer_top` | – | top | L0 | Timer IP top | `main` |
+| `apb_slave` | `timer_top` | leaf | L2 | APB protocol: wait state, error response, wr_en/rd_en | `apb_slave` |
+| `register` | `timer_top` | leaf | L1 | Address decode, configuration registers, wr_err, read mux | `register` |
+| `cnt_ctrl` | `timer_top` | leaf | L2 | Count enable (divider), halt, TIM_EN falling-edge clear | `cnt_ctrl` |
+| `counter` | `timer_top` | leaf | L2 | 64-bit up counter {TDR1, TDR0} | `counter` |
+| `interrupt` | `timer_top` | leaf | L2 | Compare, INT_ST, tim_int | `interrupt` |
 
 ## OPEN
 | ID | Description | Interim assumption | Impact |

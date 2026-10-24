@@ -15,7 +15,7 @@ Mục tiêu: RTL **Verilog-2005, đúng chức năng trong spec, đơn giản, d
 
 - Chỉ implement đúng module(s) được nêu tên; không nhận "all".
 - Module có module con: viết instance theo bảng port của con. Con chưa có RTL → vẫn instance, liệt kê trong báo cáo; **không tự viết module con**.
-- Không sửa `doc/spec/`, `doc/diagram/`. Đầu ra chỉ trong `rtl/`. Không tạo file báo cáo, traceability hay testbench.
+- Không sửa `doc/spec/`, `doc/diagram/`. Đầu ra chỉ trong `rtl/`, cộng việc bỏ comment dòng `// ../rtl/<m>.v` (S1 ghi sẵn) trong `sim/rtl.f`. Không tạo file báo cáo, traceability hay testbench.
 
 ## Bước 0 – Gate
 
@@ -24,6 +24,8 @@ python3 .claude/skills/rtl-s3-rtl/scripts/check_preconditions.py --stage 3 --mod
 ```
 
 Cần: spec đã PASS, bảng port của module, diagram `doc/diagram/<m>/<m>.svg`. `<m>_notes.md` không bắt buộc – có thì đọc. Diagram đầu vào chỉ là `<m>.svg`; góc nhìn scope `<m>_<part>.svg` không đọc; file định dạng cũ (`.mmd`, `.html`) không còn được nhận – chạy lại `/rtl-s2-diagram <m>`. Mã thoát ≠ 0 → bỏ qua module đó, báo các dòng `[THIẾU]` và lệnh cần chạy trước. Dòng `[INFO]` cho biết file cần đọc, level và module con chưa có RTL.
+
+**Nhánh git** (mục "Nhánh git" của `CLAUDE.md`): sau gate, so nhánh hiện tại với nhánh `<b>` của `<m>` (cột `Branch` của `spec_status.md`; chế độ đơn `<m>`). Khác nhau → báo nhánh đúng và lệnh (`git checkout <b>`, hoặc `git checkout -b <b> main` nếu chưa có), chỉ chuyển khi người dùng đồng ý; không chạy S3 của module con trên `main`. Commit/push đầu ra chỉ khi người dùng yêu cầu; báo cáo cuối gợi ý lệnh commit và `git push -u origin <b>`.
 
 ## Bước 1 – Coding rule
 
@@ -90,7 +92,7 @@ Lỗi lint/port do code của chính stage này → sửa rồi chạy lại đ�
 
 ## Đầu ra
 
-`rtl/<m>.v` (Verilog-2005; cấu trúc thư mục khác chỉ khi coding rule quy định). Một module một file. Làm lại module mà còn `rtl/<m>.sv` cũ do S3 tạo trước đây → xóa file `.sv` đó để không có hai bản.
+`rtl/<m>.v` (Verilog-2005; cấu trúc thư mục khác chỉ khi coding rule quy định) và dòng của nó trong `sim/rtl.f` – bỏ comment dòng S1 ghi sẵn; chưa có thì thêm vào nhóm `// --- <b> ---` của module, sau module con, trước module cha. Một module một file. Làm lại module mà còn `rtl/<m>.sv` cũ do S3 tạo trước đây → xóa file `.sv` đó để không có hai bản.
 
 ## Báo cáo cuối (chỉ trong chat)
 
