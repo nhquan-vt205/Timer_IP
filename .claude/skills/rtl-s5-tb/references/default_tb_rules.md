@@ -4,10 +4,13 @@ Mục tiêu: testbench direct, tự kiểm, mô phỏng tất định, đọc đ
 
 ## 1. Ngôn ngữ và file
 
-- **Verilog-2005 (IEEE 1364-2005)**. Testbench `tb/tb_<m>.v`, module top `tb_<m>` (đường dẫn theo `sim/tb.f`: `../tb/${TB_NAME}.v`). Mỗi item vplan một file test case `tc/TC_<M>_<NNN>.v` chứa `task run_test;` – Makefile chép thành `sim/run_test.v`, TB `include` nó. Phải là cú pháp Verilog-2005 thật – không phải đổi đuôi một file SystemVerilog.
-- Dùng: `reg`, `wire`, `integer`, `parameter`, `localparam`, `always`, `initial`, `task`, `function`, `if`, `case`, `for`, `while`, `repeat`, `` `include ``, `$display`, `$write`, `$sformat`, `$value$plusargs`, `$test$plusargs`, `$finish`.
+- **Verilog-2005 (IEEE 1364-2005)**. Hai loại file, cả hai chỉ là mã HDL:
+  - `tb/tb_<m>.v`, module top `tb_<m>`: hạ tầng dùng chung cho mọi test của `<m>`.
+  - `tc/<ID>.v`, một file mỗi item vplan (`<ID>` = ID vplan dạng `TC_<M>_<NNN>`): chuỗi test của item, được `make build` chép thành `sim/run_test.v` và include vào phần 9 của TB.
+- Phải là cú pháp Verilog-2005 thật – không phải đổi đuôi một file SystemVerilog.
+- Dùng: `reg`, `wire`, `integer`, `parameter`, `localparam`, `always`, `initial`, `task`, `function`, `if`, `case`, `for`, `while`, `repeat`, `$display`, `$write`, `$sformat`, `$value$plusargs`, `$test$plusargs`, `$fopen`/`$fgets`/`$sscanf` (khi đọc file dữ liệu), `$finish`, `` `include ``.
 - **Cấm** (SystemVerilog): `logic`, `bit`, `byte`, `int`, `string`, `always_ff`, `always_comb`, `always_latch`, `typedef`, `enum`, `struct`, `union`, `interface`/`modport`, `package`/`import`, `class`, `virtual`, `foreach`, queue, mảng động, `mailbox`, `assert`/`property` (SVA), cast `type'(...)`, literal `'0`/`'1`, `$fatal`, khai báo biến trong `for` (`for (int i …)`).
-- Chuỗi (tên item, tên case): `reg [8*N-1:0]`; ghép chuỗi động bằng `$sformat(case_name, "addr_%0h_wdata_%h", addr, wdata);`; in bằng `%0s`.
+- Chuỗi (tên item, tên case, ID test): `reg [8*N-1:0]`; ghép chuỗi động bằng `$sformat(case_name, "addr_%0h_wdata_%h", addr, wdata);`; in bằng `%0s`.
 - `` `timescale 1ns/1ps `` đầu file.
 - Comment, tên task/function/tín hiệu, chuỗi in và log chỉ dùng tiếng Anh.
 
@@ -23,15 +26,15 @@ Mỗi phần mở bằng header như sau, giữ đủ 9 header kể cả khi TB 
 
 | # | Header | Nội dung |
 | --- | --- | --- |
-| 1 | `Declaration` | `parameter CLK_PERIOD = 20;` (và hằng TB: số chu kỳ reset, timeout); mọi `reg`/`wire` nối DUT; trạng thái golden model; `integer pass_count; integer fail_count;`; tên case, biến vòng lặp, biến dùng chung cho các test case (vd. `rd_value`). Khai báo hết ở đây trước khi dùng – file `tc/` không khai báo biến module. |
+| 1 | `Declaration` | `parameter CLK_PERIOD = 20;` (và hằng TB: số chu kỳ reset, timeout); mọi `reg`/`wire` nối DUT; trạng thái golden model; `integer pass_count; integer fail_count;`; tên case, biến vòng lặp, và mọi biến các testcase dùng. Khai báo hết ở đây trước khi dùng – file testcase không khai báo biến. |
 | 2 | `DUT Instance` | `<m> u_dut (.port(net), ...);` nối theo tên, `#(.P(v))` nếu DUT có parameter. |
 | 3 | `Clock Generation` | `initial begin clk = 1'b0; end` + `always #(CLK_PERIOD / 2) clk = ~clk;` |
 | 4 | `Init Reset` | `task reset_dut`: đưa mọi input DUT về giá trị nghỉ, áp/nhả reset theo spec (mục 4), reset golden model. |
 | 5 | `Golden Reference Model` | Mô hình tham chiếu tính giá trị mong đợi từ spec/vplan: thanh ghi/mảng tham chiếu + `task`/`function` cập nhật/tính (`ref_reset`, `ref_write`, `ref_step`…). |
 | 6 | `Checker` | `task check_<tên>` so actual với expected, tăng `pass_count`/`fail_count`, in một dòng log (mục 6). |
 | 7 | `Helper Functions` | `function` nhỏ thực sự dùng. Không cần thì để header trống. |
-| 8 | `Tasks` | Task lái giao thức/bus (`apb_write`, `drive_cycle`), rồi dòng `` `include "run_test.v" `` (test case đang chạy, từ `tc/<TESTNAME>.v`). |
-| 9 | `Main Program Body` | `initial` chính (khởi tạo bộ đếm, `reset_dut`, `run_test`, in `[SUMMARY]` và `Test_result`, `$finish`) và `initial` timeout toàn cục. |
+| 8 | `Tasks` | Task lái giao thức/bus (`apb_write`, `drive_cycle`) dùng chung cho các testcase, rồi `init_test` (gán 0 bộ đếm, đọc plusarg) và `end_test` (in `[SUMMARY]` + `Test_result`, `$finish`). |
+| 9 | `Main Program Body` | `` `include "run_test.v" `` (chuỗi test của testcase đang chạy) và `initial` timeout toàn cục. |
 
 Không viết code vô nghĩa để lấp một phần: phần không cần (thường là 7) chỉ giữ header. Golden model/checker giữ đơn giản theo độ phức tạp DUT.
 
@@ -61,12 +64,12 @@ din = 8'hA5;
 - `reset_dut` khởi tạo rõ: mọi input DUT về giá trị nghỉ, reset tích cực, golden model về trạng thái sau reset; giữ reset 5 chu kỳ (`RESET_CYCLES`), rồi nhả.
 - Reset **không đồng bộ**: tích cực ngay khi gọi `reset_dut` (giữ ngữ nghĩa async), nhả bằng `@(posedge clk); #1;`.
 - Reset **đồng bộ**: cả tích cực và nhả đều theo `@(posedge clk); #1;`.
-- `initial` chính gọi `reset_dut` trước `run_test`; test case gọi lại `reset_dut` khi cần trạng thái reset giữa chừng.
+- Mỗi testcase gọi `reset_dut` ngay sau `init_test`.
 
 ## 6. Self-check: golden model → checker → bộ đếm → log
 
 - Giá trị mong đợi lấy từ golden model (spec, vplan, công thức, mô hình trạng thái), cập nhật song song với stimulus – **không** bao giờ lấy từ output DUT (`expected = dut_out;` là sai).
-- `pass_count`, `fail_count` (`integer`) gán 0 đầu `initial` chính. Mỗi lần checker so sánh = một case: PASS → `pass_count = pass_count + 1;`, FAIL → `fail_count = fail_count + 1;`. PASS + FAIL = số lần checker được gọi.
+- `pass_count`, `fail_count` (`integer`) gán 0 trong `init_test`. Mỗi lần checker so sánh = một case: PASS → `pass_count = pass_count + 1;`, FAIL → `fail_count = fail_count + 1;`. PASS + FAIL = số lần checker được gọi.
 - So bằng `===`/`!==` (bắt được X/Z). Checker có width đúng tín hiệu so sánh (một task cho mỗi width cần so, thường 1–2).
 
 ### Định dạng log (chuẩn, `check_sim_log.py` đọc)
@@ -76,12 +79,10 @@ din = 8'hA5;
 [<time>] <case> PASS | expected: <exp> | actual: <act>
 [<time>] <case> FAIL | expected: <exp> | actual: <act>
 [SUMMARY] PASS=<n> FAIL=<n>
-Test_result: PASS|FAIL
+Test_result: PASSED|FAILED
 ```
 
-QuestaSim ghi mỗi dòng `$display` vào log với tiền tố `# ` (`# [61] addr_0 ... PASS | ...`); `check_sim_log.py` bỏ tiền tố này. TB không tự in `#`.
-
-Ví dụ (nội dung một log, đã bỏ `# `; trong flow `sim/` mỗi log chỉ có **một** item vì mỗi lần chạy là một test case):
+Mỗi testcase chạy thành một log riêng `sim/log/<ID>.log` (transcript QuestaSim, mỗi dòng có tiền tố `# `). Ví dụ log gộp của nhiều item (tiền tố bỏ đi):
 
 ```text
 -- APB write test --
@@ -92,28 +93,28 @@ Ví dụ (nội dung một log, đã bỏ `# `; trong flow `sim/` mỗi log ch�
 -- handshake test --
 [181] valid_1_ready_0 FAIL | expected: 0 | actual: 1
 [SUMMARY] PASS=3 FAIL=1
-Test_result: FAIL
+Test_result: FAILED
 ```
 
-- `-- <item name> test --`: in ở đầu `run_test` của test case. `<item name>` là **tên tiếng Anh ngắn, đọc được, lấy từ vplan** (không thay bằng ID, không dịch): vplan mặc định – phần tên sau ID ở heading `### TC_<M>_001 – <tên>`; template bảng có cột `ID` – cột cụ thể nhất (thường `Sub item 2`), chỉ thêm cột phía trước (`Sub item 1`, rồi `Item`, nối bằng ` / `) khi cần để phân biệt với item khác, bỏ ô trống/`—` (vd. `-- DATA Register 0 / Reset value check test --`, `-- Single Write test --`). Lấy đúng danh sách header bằng `python3 .claude/skills/rtl-s5-tb/scripts/check_sim_log.py --items doc/vplan/<m>_vplan.<ext>`; checker dùng tên này để map về ID vplan. Chỉ ghi ID thay tên khi item trong vplan không có tên hoặc tên trùng với item khác. Mọi case in sau header thuộc item đó.
+- `-- <item name> test --`: in ở đầu chuỗi test trong `tc/<ID>.v`. `<item name>` là **tên tiếng Anh ngắn, đọc được, lấy từ vplan** (không thay bằng ID, không dịch): vplan mặc định – phần tên sau ID ở heading `### TC_<M>_001 – <tên>`; template bảng có cột `ID` – cột cụ thể nhất (thường `Sub item 2`), chỉ thêm cột phía trước (`Sub item 1`, rồi `Item`, nối bằng ` / `) khi cần để phân biệt với item khác, bỏ ô trống/`—` (vd. `-- DATA Register 0 / Reset value check test --`, `-- Single Write test --`). Lấy đúng danh sách header bằng `python3 .claude/skills/rtl-s5-tb/scripts/check_sim_log.py --items doc/vplan/<m>_vplan.<ext>`; checker dùng tên này để map về ID vplan. Chỉ ghi ID thay tên khi item trong vplan không có tên hoặc tên trùng với item khác. Mọi case in sau header thuộc item đó.
 - `[<time>]`: thời gian mô phỏng hiện tại, `$time` theo ns, in `%0d`.
 - `<case>`: tên ngắn, không khoảng trắng, mô tả **đặc điểm input quan trọng** của case – `addr_0_wdata_A5A5A5A5`, `valid_1_ready_0`, `clr_1_en_1_pulse_1`; nhiều input quan trọng thì ghép đủ vào tên. Không dùng tên vô nghĩa kiểu `CASE_001`, `TEST_01`. Ghép động bằng `$sformat`.
 - `PASS`/`FAIL`: quyết định của checker. `expected`: giá trị golden model. `actual`: giá trị DUT. In bằng `%h` (bus ra đủ chữ số hex theo width, 1 bit ra `0`/`1`), không thêm tiền tố.
 - Dấu phân cách giữ nguyên `| expected: ... | actual: ...`.
-- `[SUMMARY] PASS=<pass_count> FAIL=<fail_count>` in một lần cuối mô phỏng, ngay sau đó `Test_result: PASS` khi `fail_count == 0` và `pass_count > 0`, ngược lại `Test_result: FAIL` (`report.csh` lấy từ thứ 3 của dòng `# Test_result: PASS`). Timeout cũng in `[SUMMARY]` + `Test_result: FAIL`.
-- ID vplan dùng cho máy: tên file `tc/TC_<M>_<NNN>.v`, dòng trong `sim/pat.list`, `make TESTNAME=<ID>`, tên log `sim/log/<ID>.log`, báo cáo.
+- `[SUMMARY] PASS=<pass_count> FAIL=<fail_count>` in một lần cuối mô phỏng (trong `end_test`).
+- `Test_result: PASSED` khi FAIL = 0 và PASS > 0, ngược lại `Test_result: FAILED`; in ngay sau `[SUMMARY]`. `sim/report.csh` lấy từ thứ ba của dòng này làm kết quả.
+- ID vplan vẫn dùng cho máy: tên file `tc/<ID>.v`, `make TESTNAME=<ID>`, `sim/pat.list`, báo cáo.
 
 ```verilog
 $display("[%0d] %0s PASS | expected: %h | actual: %h", $time, name, exp, act);
 ```
 
+## 7. Chọn test, timeout, waveform, dữ liệu file
 
-## 7. Test case, timeout, waveform
-
-- **Mỗi item vplan một file `tc/TC_<M>_<NNN>.v`** (`<M>` = tên module viết hoa, `<NNN>` = ID vplan 3 chữ số; vplan đã dùng ID `TC_<M>_<NNN>` thì dùng nguyên). File chỉ chứa comment đầu (ID, tên, mục tiêu từ vplan) và `task run_test;` – không `module`, không khai báo biến (khai báo ở phần 1 của TB). Danh sách tên file và header đúng: `check_sim_log.py --items <vplan>`.
-- Makefile chọn test bằng `TESTNAME` (chép `tc/<TESTNAME>.v` → `sim/run_test.v`); không dùng `+TEST`. Mỗi lần chạy = một test case = một log `sim/log/<TESTNAME>.log`.
-- Timeout toàn cục (vd. 100× số chu kỳ ước lượng của test dài nhất) trong `initial` riêng ở phần 9: in `[TIMEOUT] ...`, `[SUMMARY]`, `Test_result: FAIL`, `$finish`.
-- Waveform: `make TESTNAME=<ID> all_wave` (QuestaSim ghi `vsim.wlf` vì `log -r /*`); TB không cần `$dumpfile`/`$dumpvars`.
+- Chọn test bằng file: `make -C sim all TESTNAME=<ID>` chép `tc/<ID>.v` thành `sim/run_test.v`, biên dịch, chạy. Không dùng `+TEST`. Chạy cả danh sách: `cd sim && ./run.csh` (đọc `pat.list`), tổng hợp: `./report.csh`.
+- Timeout toàn cục (vd. 100× số chu kỳ ước lượng) trong `initial` riêng ở phần 9: in `[TIMEOUT] ...`, `fail_count = fail_count + 1;`, gọi `end_test`.
+- Waveform: `make run` ghi mọi tín hiệu (`log -r /*`) vào `sim/vsim.wlf`; `make wave` mở trong QuestaSim. TB không cần `$dumpfile`/`$dumpvars`.
+- Dữ liệu từ file (khi vplan/spec dùng vector ngoài): input `doc/database/input/<m>_<tên>.txt`, tham chiếu `doc/database/output/<m>_<tên>.txt`. `init_test` đọc `+IN=`/`+OUT=`; mặc định là đường dẫn tương đối từ `sim/` (`"../doc/database/input/<m>_<tên>.txt"`), biến chuỗi `reg [8*256-1:0]`. Đổi cặp file: `make all TESTNAME=<ID> DATA_IN=<file> DATA_OUT=<file>`. Script sinh dữ liệu: `sim/script/<m>_gen_vectors.py` (`make gen_data`). Không đặt dữ liệu hay script trong `tb/`, `tc/`.
 
 ## 8. Khung mẫu (DUT `pulse_cnt` 3 bit: `clr_i` → 0, `en_i & pulse_i` → +1)
 
@@ -121,7 +122,9 @@ $display("[%0d] %0s PASS | expected: %h | actual: %h", $time, name, exp, act);
 
 ```verilog
 // tb_pulse_cnt - self-checking direct testbench for pulse_cnt
-// Vplan: doc/vplan/pulse_cnt_vplan.md · Test cases: tc/TC_PULSE_CNT_<NNN>.v
+// Vplan: doc/vplan/pulse_cnt_vplan.md
+// Test cases: tc/TC_PULSE_CNT_<NNN>.v, copied to sim/run_test.v by
+// "make build" and included in section 9.
 `timescale 1ns/1ps
 
 module tb_pulse_cnt;
@@ -252,80 +255,88 @@ module tb_pulse_cnt;
     end
   endtask
 
-  // Test case selected by "make TESTNAME=<ID>" (tc/<ID>.v copied to sim/run_test.v)
-  `include "run_test.v"
+  // Counters; call first in every test case
+  task init_test;
+    begin
+      pass_count = 0;
+      fail_count = 0;
+    end
+  endtask
+
+  // Summary and overall result (read by sim/report.csh); ends the simulation
+  task end_test;
+    begin
+      $display("[SUMMARY] PASS=%0d FAIL=%0d", pass_count, fail_count);
+      if (fail_count == 0 && pass_count > 0) begin
+        $display("Test_result: PASSED");
+      end
+      else begin
+        $display("Test_result: FAILED");
+      end
+      $finish;
+    end
+  endtask
 
   // ============================================================
   // 9. Main Program Body
   // ============================================================
-  initial begin
-    pass_count = 0;
-    fail_count = 0;
-    reset_dut;
-    run_test;
-    $display("[SUMMARY] PASS=%0d FAIL=%0d", pass_count, fail_count);
-    if ((fail_count == 0) && (pass_count > 0)) begin
-      $display("Test_result: PASS");
-    end
-    else begin
-      $display("Test_result: FAIL");
-    end
-    $finish;
-  end
+  // Test sequence of the selected test case (tc/<ID>.v)
+`include "run_test.v"
 
   initial begin
     #(TIMEOUT_NS);
     $display("[TIMEOUT] simulation exceeded %0d ns", TIMEOUT_NS);
-    $display("[SUMMARY] PASS=%0d FAIL=%0d", pass_count, fail_count);
-    $display("Test_result: FAIL");
-    $finish;
+    fail_count = fail_count + 1;
+    end_test;
   end
 
 endmodule
 ```
 
-`tc/TC_PULSE_CNT_002.v` (vplan item `TC_PULSE_CNT_002 – count enable`):
+`tc/TC_PULSE_CNT_002.v` (nội dung nằm bên trong module TB, nên thụt 2 khoảng trắng; không khai báo biến):
 
 ```verilog
+// ============================================================================
 // TC_PULSE_CNT_002 - count enable
-// Goal: count only when en_i and pulse_i are 1
-task run_test;
-  begin
+// Objective: count only when en_i and pulse_i are 1.
+// Copied to sim/run_test.v and included inside tb_pulse_cnt.
+// ============================================================================
+  initial begin
+    init_test;
+    reset_dut;
     $display("-- count enable test --");
     drive_cycle(1'b1, 1'b1, 1'b0);
     check_count("en_1_pulse_1", ref_count, count);
     drive_cycle(1'b0, 1'b1, 1'b0);
     check_count("en_0_pulse_1_hold", ref_count, count);
+    end_test;
   end
-endtask
 ```
 
-`sim/log/TC_PULSE_CNT_002.log` (phần của testbench):
+Vplan có item `### TC_PULSE_CNT_002 – count enable`; `sim/log/TC_PULSE_CNT_002.log` tương ứng (bỏ tiền tố `# `):
 
 ```text
-# -- count enable test --
-# [131] en_1_pulse_1 PASS | expected: 1 | actual: 1
-# [171] en_0_pulse_1_hold PASS | expected: 1 | actual: 1
-# [SUMMARY] PASS=2 FAIL=0
-# Test_result: PASS
+-- count enable test --
+[131] en_1_pulse_1 PASS | expected: 1 | actual: 1
+[171] en_0_pulse_1_hold PASS | expected: 1 | actual: 1
+[SUMMARY] PASS=2 FAIL=0
+Test_result: PASSED
 ```
 
-## 9. Chạy trong `sim/` (QuestaSim)
+## 9. Môi trường `sim/` (dùng chung cho mọi module)
 
-Môi trường của người dùng (bản mẫu: `references/sim_env/`); S5 chỉ bỏ comment/thêm dòng trong `rtl.f` và `pat.list` (S1 ghi sẵn, nhóm theo nhánh `// --- <b> ---`), không sửa file khác.
+Mẫu ở `references/sim_env/` (`init_project` chép sẵn vào `sim/` khi tạo project); S5 chỉ chép file nào chưa có trong `sim/`, không ghi đè bản đã có.
 
-- `sim/rtl.f`: RTL cả cây của DUT, đường dẫn từ `sim/`, con trước cha sau (`../rtl/pulse_cnt.v`); dòng còn `//` là comment, không biên dịch. Không thêm dòng trùng; không đưa RTL `.sv` cũ hay testbench vào đây.
-- `sim/tb.f`: `../tb/${TB_NAME}.v` – `TB_NAME = tb_<m>` do Makefile suy từ `TESTNAME`.
-- `sim/pat.list`: một ID test mỗi dòng (`TC_PULSE_CNT_001`…), theo thứ tự vplan, trong nhóm nhánh của module.
+| File | Nội dung |
+| --- | --- |
+| `Makefile` | QuestaSim 2021: `build`, `run`, `all`/`all_wave`/`all_cov` (luôn `clean_sim` trước), `wave`, `build_cov`, `run_cov` (+ report riêng của test ở `coverage/<ID>/`), `gen_cov`/`gen_html` (dựng lại `IP.ucdb` từ đầu chỉ từ `<ID>.ucdb` của các test trong `pat.list`, không gộp `IP.ucdb` cũ), `clean_sim` (file tạm của một lần chạy, giữ `*.ucdb`, `coverage/`), `clean` (xóa hết, kể cả coverage), `lint` (compile `rtl.f` không cần TB, `TOP=<m>` elaborate cây `<m>` – dùng ở S3), `help`; Vivado: `schematic` (`SCH=<instance>`, `PART=<device>`); `gen_data`. `vlog`/`vsim` lỗi → `make` dừng, in lại mọi dòng `** Error`/`** Fatal` (file, dòng) trong khối `ERRORS` ở cuối, và ghi log lỗi vào `log/<ID>.log` (không để log PASS cũ). `TESTNAME` mặc định = dòng đầu `pat.list`; `MODULE` suy ra từ `TESTNAME` (`TC_<M>_<NNN>` → `<m>`), `TB_NAME = tb_<m>`. |
+| `compile.f` | `-timescale 1ns/1ps`, `+incdir+.`, `-f rtl.f`, `-f tb.f`. |
+| `rtl.f` | Mọi file `rtl/*.v`, module con trước module cha, dạng `../rtl/<file>.v`. Dòng chứa `//` là comment. S1 ghi sẵn mọi module ở dạng comment, nhóm theo nhánh (`// --- <b> ---`, cách nhau một dòng trống); S3 bỏ comment `rtl/<m>.v` khi viết RTL; S5 bỏ comment/thêm file còn thiếu của cây `<m>`. |
+| `tb.f` | `../tb/${TB_NAME}.v` (QuestaSim thay biến môi trường do Makefile export). |
+| `pat.list` | ID testcase, mỗi dòng một ID; dòng chứa `//` bị bỏ qua. S1 ghi sẵn dòng mở đầu `// --- <b> ---` của mọi nhóm nhánh; S5 thêm ID của `<m>` vào nhóm của nó. |
+| `run.csh` / `report.csh` | Chạy hết `pat.list` (`./run.csh`; `./run.csh cov` chạy `make clean` một lần trước để regression coverage bắt đầu từ đầu) / bảng PAT_NAME – RUN_DATE – RESULT từ `log/<ID>.log` (`End time`, `Test_result`; log không có `Test_result` – build/load lỗi – là `ERROR`). Cần `tcsh`. |
+| `schematic.tcl` | Vivado: đọc `rtl.f`, `synth_design -rtl -top <m>`, mở schematic. |
 
-```bash
-cd sim
-make TESTNAME=TC_PULSE_CNT_002 all          # một test: clean_sim + vlog + vsim, log/TC_PULSE_CNT_002.log
-make TESTNAME=TC_PULSE_CNT_002 all_wave     # như trên + mở waveform
-for t in $(sed '/\/\//d' pat.list | grep "^TC_PULSE_CNT_"); do make TESTNAME=$t all; done
-./run.csh && ./report.csh                   # cả pat.list + bảng kết quả (cần csh)
-cd .. && python3 .claude/skills/rtl-s5-tb/scripts/check_sim_log.py sim/log/TC_PULSE_CNT_*.log doc/vplan/pulse_cnt_vplan.md
-```
+Đầu ra mô phỏng (`work/`, `lint_work/`, `log/`, `*.log`, `*.wlf`, `vsim.dbg`, `modelsim.ini`, `*.ucdb`, `coverage/`, `covhtmlreport/`, `run_test.v`, `.Xil/`) là file sinh ra, không phải tài liệu cần giữ; `make clean` xóa phần lớn.
 
-- `make` không dừng khi `vlog` lỗi (`vlog ... | tee compile.log`) và trả mã 0 kể cả khi test FAIL: kết quả luôn đọc từ log (`sim/compile.log`, `sim/log/<ID>.log`).
-- RTL và TB đều là Verilog-2005 `.v`; QuestaSim biên dịch `.v` ở chế độ Verilog, không thêm `-sv`. Lỗi parse ở TB nghĩa là còn construct SV → sửa TB. RTL module con cũ còn `.sv` → báo trong báo cáo, không tự viết lại RTL.
+Mọi lần biên dịch/mô phỏng (S3 `lint`, S5 `all`/`all_cov`/`run.csh`) đều chạy qua `sim/Makefile`; skill đọc `sim/` trước và không tự gõ lệnh simulator. Không có QuestaSim → không chạy, báo lệnh. File `.v` biên dịch ở chế độ Verilog: lỗi cú pháp do construct SV → sửa TB, không chuyển TB sang SystemVerilog. RTL module con cũ còn `.sv` → báo trong báo cáo, không tự viết lại RTL.

@@ -1,27 +1,71 @@
+# ============================================================================
+# Allow-list: only HDL sources, simulation scripts, docs, AI skills, the AI
+# instruction files (CLAUDE.md, AGENTS.md) and README
+# are committed. Everything else is ignored.
+# ============================================================================
+
+# 1. Project root: ignore everything ...
+/*
+
+# ... except these
+!/.gitignore
+!/CLAUDE.md
+!/AGENTS.md
+!/README*
+!/init_project
+!/rtl/
+!/tb/
+!/tc/
+!/sim/
+!/doc/
+!/.claude/
+!/.agents/
+
+# 2. rtl/, tb/, tc/: HDL source code only
+/rtl/*
+!/rtl/*.v
+!/rtl/*.vh
+!/rtl/*.sv
+!/rtl/*.svh
+/tb/*
+!/tb/*.v
+!/tb/*.vh
+!/tb/*.sv
+!/tb/*.svh
+/tc/*
+!/tc/*.v
+!/tc/*.vh
+!/tc/*.sv
+!/tc/*.svh
+
+# 3. sim/: hand-written scripts only; every Makefile / simulator output
+#    (work, log, coverage, covhtmlreport, *.wlf, *.ucdb, run_test.v, ...) is ignored
+/sim/*
+!/sim/Makefile
+!/sim/*.f
+!/sim/pat.list
+!/sim/*.csh
+!/sim/*.tcl
+!/sim/script/
+
+# 4. doc/: generated reports
+/doc/report/
+
+# 5. memory_bank/: project-local session memory, never committed (not allow-listed)
+
+# 6. AI folders: skills only
+/.claude/*
+!/.claude/skills/
+/.agents/*
+!/.agents/skills/
+
+# 7. Empty-folder placeholders
+!.gitkeep
+
+# 8. Anywhere: tool / editor leftovers
 node_modules/
-sim/**/logs/
-sim/**/obj_dir/
-*.vvp
-*.vcd
-*.fsdb
-obj_dir/
-work/
-
-# Project-local session memory (not versioned)
-memory_bank/
-
-# QuestaSim run outputs in sim/ (Makefile flow)
-sim/work/
-sim/log/
-sim/*.log
-sim/*.wlf
-sim/*.dbg
-sim/*.ini
-sim/transcript
-sim/run_test.v
-sim/*.ucdb
-sim/coverage/
-sim/covhtmlreport/
-sim/.Xil/
-sim/*.jou
-sim/*.str
+__pycache__/
+*.pyc
+*~
+*.swp
+.DS_Store
