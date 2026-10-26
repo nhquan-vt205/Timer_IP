@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="850" viewBox="0 0 820 850"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : register -->
+  <!-- stage  : 2 - diagram L1 (TDR enables, TISR clear, TIER, THCSR) -->
+  <!-- source : doc/spec/architecture/register_spec.md + doc/spec/register_file/register_map.md -->
+  <!-- scope  : from wr_en, sel_tdr0, sel_tdr1, sel_tisr, sel_tier, sel_thcsr, tim_pstrb, tim_pwdata to tdr0_wr_en, tdr1_wr_en, int_st_clr, int_en, halt_req -->
+  <desc id="model"><![CDATA[
+// Scope view (gate-level detail of blk_ctrl in register.svg). S3 reads register.svg.
+// sys_clk rising edge, sys_rst_n asynchronous active-low (clock triangle / reset bubble).
+
+[gate_tdr0_we]
+tdr0_we = wr_en & sel_tdr0;
+[mux_tdr0]
+tdr0_wr_en = tdr0_we ? tim_pstrb : 4'h0;
+[gate_tdr1_we]
+tdr1_we = wr_en & sel_tdr1;
+[mux_tdr1]
+tdr1_wr_en = tdr1_we ? tim_pstrb : 4'h0;
+[gate_int_st_clr]
+int_st_clr = wr_en & sel_tisr & tim_pstrb[0] & tim_pwdata[0];
+[gate_tier_we]
+tier_we = wr_en & sel_tier & tim_pstrb[0];
+[mux_int_en]
+int_en_d = tier_we ? tim_pwdata[0] : int_en;
+[reg_int_en]
+int_en <= int_en_d @(rst=1'b0);
+[gate_thcsr_we]
+thcsr_we = wr_en & sel_thcsr & tim_pstrb[0];
+[mux_halt_req]
+halt_req_d = thcsr_we ? tim_pwdata[0] : halt_req;
+[reg_halt_req]
+halt_req <= halt_req_d @(rst=1'b0);
+]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <!-- ===== TDR0 byte write enables ===== -->
+  <g id="mux_tdr0">
+    <path class="s" d="M480,20 L510,35 L510,75 L480,90 Z"/>
+    <text x="485" y="48">0</text>
+    <text x="485" y="78">1</text>
+  </g>
+  <line class="w" x1="450" y1="44" x2="480" y2="44"/>
+  <text x="445" y="48" text-anchor="end">4'h0</text>
+  <text x="162" y="78" text-anchor="end">tim_pstrb[3:0]</text>
+  <line class="w" x1="170" y1="74" x2="480" y2="74"/>
+  <line class="w" x1="510" y1="55" x2="780" y2="55"/>
+  <text x="780" y="51" text-anchor="end">tdr0_wr_en[3:0]</text>
+  <g id="gate_tdr0_we">
+    <path class="s" d="M330,100 H360 A25,25 0 0 1 360,150 H330 Z"/>
+  </g>
+  <text x="162" y="119" text-anchor="end">wr_en</text>
+  <line class="w" x1="170" y1="115" x2="330" y2="115"/>
+  <text x="162" y="139" text-anchor="end">sel_tdr0</text>
+  <line class="w" x1="170" y1="135" x2="330" y2="135"/>
+  <path class="w" d="M385,125 H495 V82.5"/>
+  <text x="391" y="121">tdr0_we</text>
+  <!-- ===== TDR1 byte write enables ===== -->
+  <g id="mux_tdr1">
+    <path class="s" d="M480,180 L510,195 L510,235 L480,250 Z"/>
+    <text x="485" y="208">0</text>
+    <text x="485" y="238">1</text>
+  </g>
+  <line class="w" x1="450" y1="204" x2="480" y2="204"/>
+  <text x="445" y="208" text-anchor="end">4'h0</text>
+  <text x="162" y="238" text-anchor="end">tim_pstrb[3:0]</text>
+  <line class="w" x1="170" y1="234" x2="480" y2="234"/>
+  <line class="w" x1="510" y1="215" x2="780" y2="215"/>
+  <text x="780" y="211" text-anchor="end">tdr1_wr_en[3:0]</text>
+  <g id="gate_tdr1_we">
+    <path class="s" d="M330,260 H360 A25,25 0 0 1 360,310 H330 Z"/>
+  </g>
+  <text x="162" y="279" text-anchor="end">wr_en</text>
+  <line class="w" x1="170" y1="275" x2="330" y2="275"/>
+  <text x="162" y="299" text-anchor="end">sel_tdr1</text>
+  <line class="w" x1="170" y1="295" x2="330" y2="295"/>
+  <path class="w" d="M385,285 H495 V242.5"/>
+  <text x="391" y="281">tdr1_we</text>
+  <!-- ===== TISR.INT_ST write-1-to-clear pulse ===== -->
+  <g id="gate_int_st_clr">
+    <path class="s" d="M330,330 H360 A45,45 0 0 1 360,420 H330 Z"/>
+  </g>
+  <text x="162" y="349" text-anchor="end">wr_en</text>
+  <line class="w" x1="170" y1="345" x2="330" y2="345"/>
+  <text x="162" y="369" text-anchor="end">sel_tisr</text>
+  <line class="w" x1="170" y1="365" x2="330" y2="365"/>
+  <text x="162" y="389" text-anchor="end">tim_pstrb[0]</text>
+  <line class="w" x1="170" y1="385" x2="330" y2="385"/>
+  <text x="162" y="409" text-anchor="end">tim_pwdata[0]</text>
+  <line class="w" x1="170" y1="405" x2="330" y2="405"/>
+  <line class="w" x1="405" y1="375" x2="780" y2="375"/>
+  <text x="780" y="371" text-anchor="end">int_st_clr</text>
+  <!-- ===== INT_EN register ===== -->
+  <g id="mux_int_en">
+    <path class="s" d="M480,490 L510,505 L510,545 L480,560 Z"/>
+    <text x="485" y="518">0</text>
+    <text x="485" y="548">1</text>
+  </g>
+  <text x="162" y="548" text-anchor="end">tim_pwdata[0]</text>
+  <line class="w" x1="170" y1="544" x2="480" y2="544"/>
+  <line class="w" x1="510" y1="525" x2="560" y2="525"/>
+  <g id="reg_int_en">
+    <rect class="s" x="560" y="470" width="70" height="110"/>
+    <path class="w" d="M560,550 L574,560 L560,570"/>
+    <circle class="s" cx="595" cy="585" r="5"/>
+    <text x="595" y="529" text-anchor="middle">INT_EN</text>
+  </g>
+  <text x="595" y="607" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="630" y1="525" x2="780" y2="525"/>
+  <text x="780" y="521" text-anchor="end">int_en</text>
+  <circle class="dot" cx="660" cy="525" r="4"/>
+  <path class="w" d="M660,525 V450 H450 V514 H480"/>
+  <g id="gate_tier_we">
+    <path class="s" d="M330,560 H360 A35,35 0 0 1 360,630 H330 Z"/>
+  </g>
+  <text x="162" y="579" text-anchor="end">wr_en</text>
+  <line class="w" x1="170" y1="575" x2="330" y2="575"/>
+  <text x="162" y="599" text-anchor="end">sel_tier</text>
+  <line class="w" x1="170" y1="595" x2="330" y2="595"/>
+  <text x="162" y="619" text-anchor="end">tim_pstrb[0]</text>
+  <line class="w" x1="170" y1="615" x2="330" y2="615"/>
+  <path class="w" d="M395,595 H495 V552.5"/>
+  <text x="401" y="591">tier_we</text>
+  <!-- ===== HALT_REQ register ===== -->
+  <g id="mux_halt_req">
+    <path class="s" d="M480,690 L510,705 L510,745 L480,760 Z"/>
+    <text x="485" y="718">0</text>
+    <text x="485" y="748">1</text>
+  </g>
+  <text x="162" y="748" text-anchor="end">tim_pwdata[0]</text>
+  <line class="w" x1="170" y1="744" x2="480" y2="744"/>
+  <line class="w" x1="510" y1="725" x2="560" y2="725"/>
+  <g id="reg_halt_req">
+    <rect class="s" x="560" y="670" width="70" height="110"/>
+    <path class="w" d="M560,750 L574,760 L560,770"/>
+    <circle class="s" cx="595" cy="785" r="5"/>
+    <text x="595" y="729" text-anchor="middle">HALT_REQ</text>
+  </g>
+  <text x="595" y="807" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="630" y1="725" x2="780" y2="725"/>
+  <text x="780" y="721" text-anchor="end">halt_req</text>
+  <circle class="dot" cx="660" cy="725" r="4"/>
+  <path class="w" d="M660,725 V650 H450 V714 H480"/>
+  <g id="gate_thcsr_we">
+    <path class="s" d="M330,760 H360 A35,35 0 0 1 360,830 H330 Z"/>
+  </g>
+  <text x="162" y="779" text-anchor="end">wr_en</text>
+  <line class="w" x1="170" y1="775" x2="330" y2="775"/>
+  <text x="162" y="799" text-anchor="end">sel_thcsr</text>
+  <line class="w" x1="170" y1="795" x2="330" y2="795"/>
+  <text x="162" y="819" text-anchor="end">tim_pstrb[0]</text>
+  <line class="w" x1="170" y1="815" x2="330" y2="815"/>
+  <path class="w" d="M395,795 H495 V752.5"/>
+  <text x="401" y="791">thcsr_we</text>
+</svg>

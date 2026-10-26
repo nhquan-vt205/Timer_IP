@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="830" viewBox="0 0 940 830"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : register -->
+  <!-- stage  : 2 - diagram L1 (read mux) -->
+  <!-- source : doc/spec/architecture/register_spec.md + doc/spec/register_file/register_map.md -->
+  <!-- scope  : from tim_paddr, rd_en, tim_en, div_en, div_val, cnt, tcmp0, tcmp1, int_en, int_st, halt_ack, halt_req to rdata -->
+  <desc id="model"><![CDATA[
+// Scope view (gate-level detail of blk_rd_mux in register.svg). S3 reads register.svg.
+
+[mux_rd]
+always @(*) case (tim_paddr[11:2])
+  10'h000: rdata_mux = {20'h0, div_val, 6'h0, div_en, tim_en};   // TCR
+  10'h001: rdata_mux = cnt[31:0];                                 // TDR0
+  10'h002: rdata_mux = cnt[63:32];                                // TDR1
+  10'h003: rdata_mux = tcmp0;                                     // TCMP0
+  10'h004: rdata_mux = tcmp1;                                     // TCMP1
+  10'h005: rdata_mux = {31'h0, int_en};                           // TIER
+  10'h006: rdata_mux = {31'h0, int_st};                           // TISR
+  10'h007: rdata_mux = {30'h0, halt_ack, halt_req};               // THCSR
+  default: rdata_mux = 32'h0;                                     // reserved: RAZ
+endcase
+[mux_rdata]
+rdata = rd_en ? rdata_mux : 32'h0;
+]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <g id="mux_rd">
+    <path class="s" d="M560,140 L640,193.333 L640,686.667 L560,740 Z"/>
+    <text x="566" y="204">10'h000</text>
+    <text x="566" y="264">10'h001</text>
+    <text x="566" y="324">10'h002</text>
+    <text x="566" y="384">10'h003</text>
+    <text x="566" y="444">10'h004</text>
+    <text x="566" y="504">10'h005</text>
+    <text x="566" y="564">10'h006</text>
+    <text x="566" y="624">10'h007</text>
+    <text x="566" y="684">default</text>
+  </g>
+  <!-- ===== TCR word ===== -->
+  <g id="bus_tcr">
+    <rect class="s" x="360" y="60" width="25" height="110"/>
+  </g>
+  <text x="162" y="79" text-anchor="end">tim_en</text>
+  <line class="w" x1="170" y1="75" x2="360" y2="75"/>
+  <text x="314" y="71">[0]</text>
+  <text x="162" y="99" text-anchor="end">div_en</text>
+  <line class="w" x1="170" y1="95" x2="360" y2="95"/>
+  <text x="314" y="91">[1]</text>
+  <line class="w" x1="290" y1="115" x2="360" y2="115"/>
+  <text x="285" y="119" text-anchor="end">6'h0</text>
+  <text x="314" y="111">[7:2]</text>
+  <text x="162" y="139" text-anchor="end">div_val[3:0]</text>
+  <line class="w" x1="170" y1="135" x2="360" y2="135"/>
+  <text x="314" y="131">[11:8]</text>
+  <line class="w" x1="290" y1="155" x2="360" y2="155"/>
+  <text x="285" y="159" text-anchor="end">20'h0</text>
+  <text x="314" y="151">[31:12]</text>
+  <path class="w" d="M385,115 H470 V200 H560"/>
+  <text x="391" y="111">TCR[31:0]</text>
+  <!-- ===== TDR0 / TDR1 / TCMP0 / TCMP1 ===== -->
+  <text x="162" y="264" text-anchor="end">cnt[31:0]</text>
+  <line class="w" x1="170" y1="260" x2="560" y2="260"/>
+  <text x="162" y="324" text-anchor="end">cnt[63:32]</text>
+  <line class="w" x1="170" y1="320" x2="560" y2="320"/>
+  <text x="162" y="384" text-anchor="end">tcmp0[31:0]</text>
+  <line class="w" x1="170" y1="380" x2="560" y2="380"/>
+  <text x="162" y="444" text-anchor="end">tcmp1[31:0]</text>
+  <line class="w" x1="170" y1="440" x2="560" y2="440"/>
+  <!-- ===== TIER / TISR / THCSR words ===== -->
+  <g id="bus_tier">
+    <rect class="s" x="360" y="475" width="25" height="50"/>
+  </g>
+  <text x="162" y="494" text-anchor="end">int_en</text>
+  <line class="w" x1="170" y1="490" x2="360" y2="490"/>
+  <text x="314" y="486">[0]</text>
+  <line class="w" x1="290" y1="510" x2="360" y2="510"/>
+  <text x="285" y="514" text-anchor="end">31'h0</text>
+  <text x="314" y="506">[31:1]</text>
+  <line class="w" x1="385" y1="500" x2="560" y2="500"/>
+  <text x="391" y="496">TIER[31:0]</text>
+  <g id="bus_tisr">
+    <rect class="s" x="360" y="535" width="25" height="50"/>
+  </g>
+  <text x="162" y="554" text-anchor="end">int_st</text>
+  <line class="w" x1="170" y1="550" x2="360" y2="550"/>
+  <text x="314" y="546">[0]</text>
+  <line class="w" x1="290" y1="570" x2="360" y2="570"/>
+  <text x="285" y="574" text-anchor="end">31'h0</text>
+  <text x="314" y="566">[31:1]</text>
+  <line class="w" x1="385" y1="560" x2="560" y2="560"/>
+  <text x="391" y="556">TISR[31:0]</text>
+  <g id="bus_thcsr">
+    <rect class="s" x="360" y="615" width="25" height="70"/>
+  </g>
+  <text x="162" y="634" text-anchor="end">halt_req</text>
+  <line class="w" x1="170" y1="630" x2="360" y2="630"/>
+  <text x="314" y="626">[0]</text>
+  <text x="162" y="654" text-anchor="end">halt_ack</text>
+  <line class="w" x1="170" y1="650" x2="360" y2="650"/>
+  <text x="314" y="646">[1]</text>
+  <line class="w" x1="290" y1="670" x2="360" y2="670"/>
+  <text x="285" y="674" text-anchor="end">30'h0</text>
+  <text x="314" y="666">[31:2]</text>
+  <path class="w" d="M385,650 H470 V620 H560"/>
+  <text x="391" y="646">THCSR[31:0]</text>
+  <line class="w" x1="530" y1="680" x2="560" y2="680"/>
+  <text x="525" y="684" text-anchor="end">32'h0</text>
+  <text x="162" y="774" text-anchor="end">tim_paddr[11:2]</text>
+  <path class="w" d="M170,770 H600 V713.333"/>
+  <!-- ===== rdata = 0 when rd_en = 0 ===== -->
+  <g id="mux_rdata">
+    <path class="s" d="M740,386 L770,401 L770,441 L740,456 Z"/>
+    <text x="745" y="414">0</text>
+    <text x="745" y="444">1</text>
+  </g>
+  <line class="w" x1="640" y1="440" x2="740" y2="440"/>
+  <text x="646" y="436">rdata_mux</text>
+  <line class="w" x1="710" y1="410" x2="740" y2="410"/>
+  <text x="705" y="414" text-anchor="end">32'h0</text>
+  <text x="162" y="804" text-anchor="end">rd_en</text>
+  <path class="w" d="M170,800 H755 V448.5"/>
+  <line class="w" x1="770" y1="421" x2="900" y2="421"/>
+  <text x="900" y="417" text-anchor="end">rdata[31:0]</text>
+</svg>

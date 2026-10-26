@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="580" height="600" viewBox="0 0 580 600"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : register -->
+  <!-- stage  : 2 - diagram L1 (address decode) -->
+  <!-- source : doc/spec/architecture/register_spec.md + doc/spec/register_file/register_map.md -->
+  <!-- scope  : from tim_paddr to sel_tcr .. sel_thcsr -->
+  <desc id="model"><![CDATA[
+// Scope view (gate-level detail of the address compare of every block in register.svg). S3 reads register.svg.
+// Each sel_* is used by exactly one block of register.svg (written inside that block).
+[op_sel_tcr]
+sel_tcr = (tim_paddr[11:2] == 10'h000);
+[op_sel_tdr0]
+sel_tdr0 = (tim_paddr[11:2] == 10'h001);
+[op_sel_tdr1]
+sel_tdr1 = (tim_paddr[11:2] == 10'h002);
+[op_sel_tcmp0]
+sel_tcmp0 = (tim_paddr[11:2] == 10'h003);
+[op_sel_tcmp1]
+sel_tcmp1 = (tim_paddr[11:2] == 10'h004);
+[op_sel_tier]
+sel_tier = (tim_paddr[11:2] == 10'h005);
+[op_sel_tisr]
+sel_tisr = (tim_paddr[11:2] == 10'h006);
+[op_sel_thcsr]
+sel_thcsr = (tim_paddr[11:2] == 10'h007);
+]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <!-- ===== tim_paddr[11:2] trunk ===== -->
+  <text x="162" y="56" text-anchor="end">tim_paddr[11:2]</text>
+  <g id="op_sel_tcr">
+    <ellipse class="s" cx="380" cy="60" rx="45" ry="18"/>
+    <text x="380" y="65" text-anchor="middle">== ?</text>
+  </g>
+  <line class="w" x1="170" y1="52" x2="339.7" y2="52"/>
+  <circle class="dot" cx="210" cy="52" r="4"/>
+  <line class="w" x1="309.7" y1="68" x2="339.7" y2="68"/>
+  <text x="304.7" y="72" text-anchor="end">10'h000</text>
+  <line class="w" x1="425" y1="60" x2="560" y2="60"/>
+  <text x="560" y="56" text-anchor="end">sel_tcr</text>
+  <g id="op_sel_tdr0">
+    <ellipse class="s" cx="380" cy="130" rx="45" ry="18"/>
+    <text x="380" y="135" text-anchor="middle">== ?</text>
+  </g>
+  <circle class="dot" cx="210" cy="122" r="4"/>
+  <line class="w" x1="210" y1="122" x2="339.7" y2="122"/>
+  <line class="w" x1="309.7" y1="138" x2="339.7" y2="138"/>
+  <text x="304.7" y="142" text-anchor="end">10'h001</text>
+  <line class="w" x1="425" y1="130" x2="560" y2="130"/>
+  <text x="560" y="126" text-anchor="end">sel_tdr0</text>
+  <g id="op_sel_tdr1">
+    <ellipse class="s" cx="380" cy="200" rx="45" ry="18"/>
+    <text x="380" y="205" text-anchor="middle">== ?</text>
+  </g>
+  <circle class="dot" cx="210" cy="192" r="4"/>
+  <line class="w" x1="210" y1="192" x2="339.7" y2="192"/>
+  <line class="w" x1="309.7" y1="208" x2="339.7" y2="208"/>
+  <text x="304.7" y="212" text-anchor="end">10'h002</text>
+  <line class="w" x1="425" y1="200" x2="560" y2="200"/>
+  <text x="560" y="196" text-anchor="end">sel_tdr1</text>
+  <g id="op_sel_tcmp0">
+    <ellipse class="s" cx="380" cy="270" rx="45" ry="18"/>
+    <text x="380" y="275" text-anchor="middle">== ?</text>
+  </g>
+  <circle class="dot" cx="210" cy="262" r="4"/>
+  <line class="w" x1="210" y1="262" x2="339.7" y2="262"/>
+  <line class="w" x1="309.7" y1="278" x2="339.7" y2="278"/>
+  <text x="304.7" y="282" text-anchor="end">10'h003</text>
+  <line class="w" x1="425" y1="270" x2="560" y2="270"/>
+  <text x="560" y="266" text-anchor="end">sel_tcmp0</text>
+  <g id="op_sel_tcmp1">
+    <ellipse class="s" cx="380" cy="340" rx="45" ry="18"/>
+    <text x="380" y="345" text-anchor="middle">== ?</text>
+  </g>
+  <circle class="dot" cx="210" cy="332" r="4"/>
+  <line class="w" x1="210" y1="332" x2="339.7" y2="332"/>
+  <line class="w" x1="309.7" y1="348" x2="339.7" y2="348"/>
+  <text x="304.7" y="352" text-anchor="end">10'h004</text>
+  <line class="w" x1="425" y1="340" x2="560" y2="340"/>
+  <text x="560" y="336" text-anchor="end">sel_tcmp1</text>
+  <g id="op_sel_tier">
+    <ellipse class="s" cx="380" cy="410" rx="45" ry="18"/>
+    <text x="380" y="415" text-anchor="middle">== ?</text>
+  </g>
+  <circle class="dot" cx="210" cy="402" r="4"/>
+  <line class="w" x1="210" y1="402" x2="339.7" y2="402"/>
+  <line class="w" x1="309.7" y1="418" x2="339.7" y2="418"/>
+  <text x="304.7" y="422" text-anchor="end">10'h005</text>
+  <line class="w" x1="425" y1="410" x2="560" y2="410"/>
+  <text x="560" y="406" text-anchor="end">sel_tier</text>
+  <g id="op_sel_tisr">
+    <ellipse class="s" cx="380" cy="480" rx="45" ry="18"/>
+    <text x="380" y="485" text-anchor="middle">== ?</text>
+  </g>
+  <circle class="dot" cx="210" cy="472" r="4"/>
+  <line class="w" x1="210" y1="472" x2="339.7" y2="472"/>
+  <line class="w" x1="309.7" y1="488" x2="339.7" y2="488"/>
+  <text x="304.7" y="492" text-anchor="end">10'h006</text>
+  <line class="w" x1="425" y1="480" x2="560" y2="480"/>
+  <text x="560" y="476" text-anchor="end">sel_tisr</text>
+  <g id="op_sel_thcsr">
+    <ellipse class="s" cx="380" cy="550" rx="45" ry="18"/>
+    <text x="380" y="555" text-anchor="middle">== ?</text>
+  </g>
+  <path class="w" d="M210,52 V542 H339.7"/>
+  <line class="w" x1="309.7" y1="558" x2="339.7" y2="558"/>
+  <text x="304.7" y="562" text-anchor="end">10'h007</text>
+  <line class="w" x1="425" y1="550" x2="560" y2="550"/>
+  <text x="560" y="546" text-anchor="end">sel_thcsr</text>
+</svg>

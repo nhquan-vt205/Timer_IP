@@ -1,0 +1,211 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1620" height="980" viewBox="0 0 1620 980"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : register -->
+  <!-- stage  : 2 - diagram L1 (TCR + wr_err) -->
+  <!-- source : doc/spec/architecture/register_spec.md + doc/spec/register_file/register_map.md -->
+  <!-- scope  : from wr_en, sel_tcr, tim_pstrb, tim_pwdata to wr_err, tim_en, div_en, div_val -->
+  <desc id="model"><![CDATA[
+// Scope view (gate-level detail of blk_tcr in register.svg). S3 reads register.svg.
+// sys_clk rising edge, sys_rst_n asynchronous active-low (clock triangle / reset bubble).
+
+[gate_tcr_we0]
+tcr_we0 = wr_en & sel_tcr & tim_pstrb[0];
+[mux_tim_en]
+tim_en_d = tcr_we0 ? tim_pwdata[0] : tim_en;
+[reg_tim_en]
+tim_en <= tim_en_d @(rst=1'b0);
+[mux_div_en]
+div_en_d = tcr_we0 ? tim_pwdata[1] : div_en;
+[reg_div_en]
+div_en <= div_en_d @(rst=1'b0);
+[gate_tcr_we1]
+tcr_we1 = wr_en & sel_tcr & tim_pstrb[1];
+[mux_div_val]
+div_val_d = tcr_we1 ? tim_pwdata[11:8] : div_val;
+[reg_div_val]
+div_val <= div_val_d @(rst=4'h1);
+[op_dv_ne]
+div_val_ne = (tim_pwdata[11:8] != div_val);
+[gate_dv_chg]
+div_val_chg = tim_pstrb[1] & div_val_ne;
+[op_de_ne]
+div_en_ne = (tim_pwdata[1] != div_en);
+[gate_de_chg]
+div_en_chg = tim_pstrb[0] & div_en_ne;
+[op_gt8]
+div_val_gt8 = (tim_pwdata[11:8] > 4'd8);
+[gate_dv_bad]
+div_val_bad = tim_pstrb[1] & div_val_gt8;
+[gate_chg_or]
+div_any_chg = div_val_chg | div_en_chg;
+[gate_div_chg]
+div_chg = tim_en & div_any_chg;
+[gate_err_or]
+wr_err_any = div_val_bad | div_chg;
+[gate_wr_err]
+wr_err = sel_tcr & wr_err_any;
+]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <!-- ===== TIM_EN register ===== -->
+  <g id="mux_tim_en">
+    <path class="s" d="M560,80 L590,95 L590,135 L560,150 Z"/>
+    <text x="565" y="108">0</text>
+    <text x="565" y="138">1</text>
+  </g>
+  <text x="172" y="138" text-anchor="end">tim_pwdata[0]</text>
+  <line class="w" x1="180" y1="134" x2="560" y2="134"/>
+  <line class="w" x1="590" y1="115" x2="640" y2="115"/>
+  <g id="reg_tim_en">
+    <rect class="s" x="640" y="60" width="70" height="110"/>
+    <path class="w" d="M640,140 L654,150 L640,160"/>
+    <circle class="s" cx="675" cy="175" r="5"/>
+    <text x="675" y="119" text-anchor="middle">TIM_EN</text>
+  </g>
+  <text x="675" y="197" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="710" y1="115" x2="1580" y2="115"/>
+  <text x="1580" y="111" text-anchor="end">tim_en</text>
+  <circle class="dot" cx="740" cy="115" r="4"/>
+  <path class="w" d="M740,115 V40 H530 V104 H560"/>
+  <!-- ===== DIV_EN register ===== -->
+  <g id="mux_div_en">
+    <path class="s" d="M560,250 L590,265 L590,305 L560,320 Z"/>
+    <text x="565" y="278">0</text>
+    <text x="565" y="308">1</text>
+  </g>
+  <text x="172" y="308" text-anchor="end">tim_pwdata[1]</text>
+  <line class="w" x1="180" y1="304" x2="560" y2="304"/>
+  <line class="w" x1="590" y1="285" x2="640" y2="285"/>
+  <g id="reg_div_en">
+    <rect class="s" x="640" y="230" width="70" height="110"/>
+    <path class="w" d="M640,310 L654,320 L640,330"/>
+    <circle class="s" cx="675" cy="345" r="5"/>
+    <text x="675" y="289" text-anchor="middle">DIV_EN</text>
+  </g>
+  <text x="675" y="367" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="710" y1="285" x2="1580" y2="285"/>
+  <text x="1580" y="281" text-anchor="end">div_en</text>
+  <circle class="dot" cx="740" cy="285" r="4"/>
+  <path class="w" d="M740,285 V210 H530 V274 H560"/>
+  <!-- ===== DIV_VAL register ===== -->
+  <g id="mux_div_val">
+    <path class="s" d="M560,420 L590,435 L590,475 L560,490 Z"/>
+    <text x="565" y="448">0</text>
+    <text x="565" y="478">1</text>
+  </g>
+  <text x="172" y="478" text-anchor="end">tim_pwdata[11:8]</text>
+  <line class="w" x1="180" y1="474" x2="560" y2="474"/>
+  <line class="w" x1="590" y1="455" x2="640" y2="455"/>
+  <g id="reg_div_val">
+    <rect class="s" x="646" y="394" width="70" height="110"/>
+    <rect class="s" x="640" y="400" width="70" height="110"/>
+    <path class="w" d="M640,480 L654,490 L640,500"/>
+    <circle class="s" cx="675" cy="515" r="5"/>
+    <text x="675" y="450" text-anchor="middle">DIV_VAL</text>
+    <text x="675" y="466" text-anchor="middle">[3:0]</text>
+  </g>
+  <text x="675" y="537" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="716" y1="455" x2="1580" y2="455"/>
+  <text x="1580" y="451" text-anchor="end">div_val[3:0]</text>
+  <circle class="dot" cx="740" cy="455" r="4"/>
+  <path class="w" d="M740,455 V380 H530 V444 H560"/>
+  <!-- ===== tcr_we0 / tcr_we1 ===== -->
+  <g id="gate_tcr_we0">
+    <path class="s" d="M420,150 H450 A35,35 0 0 1 450,220 H420 Z"/>
+  </g>
+  <text x="172" y="169" text-anchor="end">wr_en</text>
+  <line class="w" x1="180" y1="165" x2="420" y2="165"/>
+  <text x="172" y="189" text-anchor="end">sel_tcr</text>
+  <line class="w" x1="180" y1="185" x2="420" y2="185"/>
+  <text x="172" y="209" text-anchor="end">tim_pstrb[0]</text>
+  <line class="w" x1="180" y1="205" x2="420" y2="205"/>
+  <path class="w" d="M485,185 H575 V142.5"/>
+  <circle class="dot" cx="575" cy="185" r="4"/>
+  <line class="w" x1="575" y1="185" x2="575" y2="257.5"/>
+  <text x="491" y="181">tcr_we0</text>
+  <g id="gate_tcr_we1">
+    <path class="s" d="M420,490 H450 A35,35 0 0 1 450,560 H420 Z"/>
+  </g>
+  <text x="172" y="509" text-anchor="end">wr_en</text>
+  <line class="w" x1="180" y1="505" x2="420" y2="505"/>
+  <text x="172" y="529" text-anchor="end">sel_tcr</text>
+  <line class="w" x1="180" y1="525" x2="420" y2="525"/>
+  <text x="172" y="549" text-anchor="end">tim_pstrb[1]</text>
+  <line class="w" x1="180" y1="545" x2="420" y2="545"/>
+  <path class="w" d="M485,525 H575 V482.5"/>
+  <text x="491" y="521">tcr_we1</text>
+  <!-- ===== wr_err: forbidden TCR write ===== -->
+  <g id="op_dv_ne">
+    <ellipse class="s" cx="945" cy="660" rx="45" ry="18"/>
+    <text x="945" y="665" text-anchor="middle">!= ?</text>
+  </g>
+  <path class="w" d="M840,455 V652 H904.7"/>
+  <circle class="dot" cx="840" cy="455" r="4"/>
+  <text x="172" y="672" text-anchor="end">tim_pwdata[11:8]</text>
+  <line class="w" x1="180" y1="668" x2="904.7" y2="668"/>
+  <g id="op_de_ne">
+    <ellipse class="s" cx="945" cy="760" rx="45" ry="18"/>
+    <text x="945" y="765" text-anchor="middle">!= ?</text>
+  </g>
+  <path class="w" d="M810,285 V752 H904.7"/>
+  <circle class="dot" cx="810" cy="285" r="4"/>
+  <text x="172" y="772" text-anchor="end">tim_pwdata[1]</text>
+  <line class="w" x1="180" y1="768" x2="904.7" y2="768"/>
+  <g id="op_gt8">
+    <ellipse class="s" cx="945" cy="860" rx="45" ry="18"/>
+    <text x="945" y="865" text-anchor="middle">&gt; ?</text>
+  </g>
+  <text x="172" y="856" text-anchor="end">tim_pwdata[11:8]</text>
+  <line class="w" x1="180" y1="852" x2="904.7" y2="852"/>
+  <line class="w" x1="874.7" y1="868" x2="904.7" y2="868"/>
+  <text x="869.7" y="872" text-anchor="end">4'd8</text>
+  <g id="gate_dv_chg">
+    <path class="s" d="M1030,655 H1060 A25,25 0 0 1 1060,705 H1030 Z"/>
+  </g>
+  <path class="w" d="M990,660 H1008 V670 H1030"/>
+  <text x="172" y="694" text-anchor="end">tim_pstrb[1]</text>
+  <line class="w" x1="180" y1="690" x2="1030" y2="690"/>
+  <g id="gate_de_chg">
+    <path class="s" d="M1030,755 H1060 A25,25 0 0 1 1060,805 H1030 Z"/>
+  </g>
+  <path class="w" d="M990,760 H1008 V770 H1030"/>
+  <text x="172" y="794" text-anchor="end">tim_pstrb[0]</text>
+  <line class="w" x1="180" y1="790" x2="1030" y2="790"/>
+  <g id="gate_dv_bad">
+    <path class="s" d="M1030,855 H1060 A25,25 0 0 1 1060,905 H1030 Z"/>
+  </g>
+  <path class="w" d="M990,860 H1008 V870 H1030"/>
+  <text x="172" y="894" text-anchor="end">tim_pstrb[1]</text>
+  <line class="w" x1="180" y1="890" x2="1030" y2="890"/>
+  <g id="gate_chg_or">
+    <path class="s" d="M1130,705 Q1170,705 1200,730 Q1170,755 1130,755 Q1144,730 1130,705 Z"/>
+  </g>
+  <path class="w" d="M1085,680 H1100 V720 H1135.9"/>
+  <path class="w" d="M1085,780 H1120 V740 H1135.9"/>
+  <g id="gate_div_chg">
+    <path class="s" d="M1240,695 H1270 A25,25 0 0 1 1270,745 H1240 Z"/>
+  </g>
+  <circle class="dot" cx="1220" cy="115" r="4"/>
+  <path class="w" d="M1220,115 V710 H1240"/>
+  <line class="w" x1="1200" y1="730" x2="1240" y2="730"/>
+  <g id="gate_err_or">
+    <path class="s" d="M1370,705 Q1410,705 1440,730 Q1410,755 1370,755 Q1384,730 1370,705 Z"/>
+  </g>
+  <line class="w" x1="1295" y1="720" x2="1375.9" y2="720"/>
+  <text x="1299" y="716">div_chg</text>
+  <path class="w" d="M1085,880 H1345 V740 H1375.9"/>
+  <g id="gate_wr_err">
+    <path class="s" d="M1480,715 H1510 A25,25 0 0 1 1510,765 H1480 Z"/>
+  </g>
+  <line class="w" x1="1440" y1="730" x2="1480" y2="730"/>
+  <text x="172" y="934" text-anchor="end">sel_tcr</text>
+  <path class="w" d="M180,930 H1460 V750 H1480"/>
+  <line class="w" x1="1535" y1="740" x2="1580" y2="740"/>
+  <text x="1580" y="736" text-anchor="end">wr_err</text>
+</svg>

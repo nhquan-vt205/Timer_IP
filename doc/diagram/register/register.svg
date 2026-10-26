@@ -1,0 +1,238 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="1030" viewBox="0 0 1460 1030"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : register -->
+  <!-- stage  : 2 - diagram L1 (block overview; gate-level detail in register_<block>.svg) -->
+  <!-- source : doc/spec/architecture/register_spec.md + doc/spec/register_file/register_map.md -->
+  <desc id="model"><![CDATA[
+// sys_clk rising edge, sys_rst_n asynchronous active-low (clock triangle / reset bubble).
+// Detail (gate level) of every block: register_<block>.svg; this model is complete.
+[blk_ctrl]
+sel_tdr0 = (tim_paddr[11:2] == 10'h001);
+sel_tdr1 = (tim_paddr[11:2] == 10'h002);
+sel_tier = (tim_paddr[11:2] == 10'h005);
+sel_tisr = (tim_paddr[11:2] == 10'h006);
+sel_thcsr = (tim_paddr[11:2] == 10'h007);
+tdr0_wr_en = (wr_en & sel_tdr0) ? tim_pstrb : 4'h0;
+tdr1_wr_en = (wr_en & sel_tdr1) ? tim_pstrb : 4'h0;
+int_st_clr = wr_en & sel_tisr & tim_pstrb[0] & tim_pwdata[0];
+tier_we    = wr_en & sel_tier & tim_pstrb[0];
+int_en_d   = tier_we ? tim_pwdata[0] : int_en;
+int_en    <= int_en_d @(rst=1'b0);                         // TIER.INT_EN
+thcsr_we   = wr_en & sel_thcsr & tim_pstrb[0];
+halt_req_d = thcsr_we ? tim_pwdata[0] : halt_req;
+halt_req  <= halt_req_d @(rst=1'b0);                       // THCSR.HALT_REQ
+[blk_tcr]
+sel_tcr     = (tim_paddr[11:2] == 10'h000);
+tcr_we0     = wr_en & sel_tcr & tim_pstrb[0];
+tcr_we1     = wr_en & sel_tcr & tim_pstrb[1];
+tim_en_d    = tcr_we0 ? tim_pwdata[0] : tim_en;
+tim_en     <= tim_en_d @(rst=1'b0);                        // TCR.TIM_EN
+div_en_d    = tcr_we0 ? tim_pwdata[1] : div_en;
+div_en     <= div_en_d @(rst=1'b0);                        // TCR.DIV_EN
+div_val_d   = tcr_we1 ? tim_pwdata[11:8] : div_val;
+div_val    <= div_val_d @(rst=4'h1);                       // TCR.DIV_VAL
+div_val_bad = tim_pstrb[1] & (tim_pwdata[11:8] > 4'd8);
+div_val_chg = tim_pstrb[1] & (tim_pwdata[11:8] != div_val);
+div_en_chg  = tim_pstrb[0] & (tim_pwdata[1] != div_en);
+div_chg     = tim_en & (div_val_chg | div_en_chg);
+wr_err      = sel_tcr & (div_val_bad | div_chg);           // combinational
+[blk_tcmp0]
+sel_tcmp0 = (tim_paddr[11:2] == 10'h003);
+tcmp0_we  = wr_en & sel_tcmp0;
+tcmp0_d[7:0] = (tcmp0_we & tim_pstrb[0]) ? tim_pwdata[7:0] : tcmp0[7:0];
+tcmp0[7:0] <= tcmp0_d[7:0] @(rst=8'hFF);
+tcmp0_d[15:8] = (tcmp0_we & tim_pstrb[1]) ? tim_pwdata[15:8] : tcmp0[15:8];
+tcmp0[15:8] <= tcmp0_d[15:8] @(rst=8'hFF);
+tcmp0_d[23:16] = (tcmp0_we & tim_pstrb[2]) ? tim_pwdata[23:16] : tcmp0[23:16];
+tcmp0[23:16] <= tcmp0_d[23:16] @(rst=8'hFF);
+tcmp0_d[31:24] = (tcmp0_we & tim_pstrb[3]) ? tim_pwdata[31:24] : tcmp0[31:24];
+tcmp0[31:24] <= tcmp0_d[31:24] @(rst=8'hFF);
+[blk_tcmp1]
+sel_tcmp1 = (tim_paddr[11:2] == 10'h004);
+tcmp1_we  = wr_en & sel_tcmp1;
+tcmp1_d[7:0] = (tcmp1_we & tim_pstrb[0]) ? tim_pwdata[7:0] : tcmp1[7:0];
+tcmp1[7:0] <= tcmp1_d[7:0] @(rst=8'hFF);
+tcmp1_d[15:8] = (tcmp1_we & tim_pstrb[1]) ? tim_pwdata[15:8] : tcmp1[15:8];
+tcmp1[15:8] <= tcmp1_d[15:8] @(rst=8'hFF);
+tcmp1_d[23:16] = (tcmp1_we & tim_pstrb[2]) ? tim_pwdata[23:16] : tcmp1[23:16];
+tcmp1[23:16] <= tcmp1_d[23:16] @(rst=8'hFF);
+tcmp1_d[31:24] = (tcmp1_we & tim_pstrb[3]) ? tim_pwdata[31:24] : tcmp1[31:24];
+tcmp1[31:24] <= tcmp1_d[31:24] @(rst=8'hFF);
+[blk_rd_mux]
+always @(*) case (tim_paddr[11:2])
+  10'h000: rdata_mux = {20'h0, div_val, 6'h0, div_en, tim_en};   // TCR
+  10'h001: rdata_mux = cnt[31:0];                                 // TDR0
+  10'h002: rdata_mux = cnt[63:32];                                // TDR1
+  10'h003: rdata_mux = tcmp0;                                     // TCMP0
+  10'h004: rdata_mux = tcmp1;                                     // TCMP1
+  10'h005: rdata_mux = {31'h0, int_en};                           // TIER
+  10'h006: rdata_mux = {31'h0, int_st};                           // TISR
+  10'h007: rdata_mux = {30'h0, halt_ack, halt_req};               // THCSR
+  default: rdata_mux = 32'h0;                                     // reserved: RAZ
+endcase
+rdata = rd_en ? rdata_mux : 32'h0;
+]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <!-- ===== inputs: shared write/address trunks ===== -->
+  <text x="162" y="64" text-anchor="end">tim_paddr[11:0]</text>
+  <line class="w" x1="170" y1="60" x2="290" y2="60"/>
+  <text x="162" y="84" text-anchor="end">wr_en</text>
+  <line class="w" x1="170" y1="80" x2="320" y2="80"/>
+  <text x="162" y="104" text-anchor="end">tim_pstrb[3:0]</text>
+  <line class="w" x1="170" y1="100" x2="350" y2="100"/>
+  <text x="162" y="124" text-anchor="end">tim_pwdata[31:0]</text>
+  <line class="w" x1="170" y1="120" x2="380" y2="120"/>
+  <!-- ===== blk_ctrl ===== -->
+  <g id="blk_ctrl">
+    <rect class="s" x="560" y="160" width="160" height="140"/>
+    <text x="640" y="235" text-anchor="middle">ctrl_regs</text>
+  </g>
+  <text x="556" y="176" text-anchor="end">tim_paddr[11:2]</text>
+  <text x="556" y="196" text-anchor="end">wr_en</text>
+  <text x="556" y="216" text-anchor="end">tim_pstrb[3:0]</text>
+  <text x="556" y="236" text-anchor="end">tim_pwdata[31:0]</text>
+  <text x="724" y="176">tdr0_wr_en[3:0]</text>
+  <text x="724" y="196">tdr1_wr_en[3:0]</text>
+  <text x="724" y="216">int_st_clr</text>
+  <text x="724" y="236">int_en</text>
+  <text x="724" y="256">halt_req</text>
+  <line class="w" x1="290" y1="180" x2="560" y2="180"/>
+  <line class="w" x1="320" y1="200" x2="560" y2="200"/>
+  <line class="w" x1="350" y1="220" x2="560" y2="220"/>
+  <line class="w" x1="380" y1="240" x2="560" y2="240"/>
+  <!-- ===== blk_tcr ===== -->
+  <g id="blk_tcr">
+    <rect class="s" x="560" y="320" width="160" height="120"/>
+    <text x="640" y="385" text-anchor="middle">tcr_regs</text>
+  </g>
+  <text x="556" y="336" text-anchor="end">tim_paddr[11:2]</text>
+  <text x="556" y="356" text-anchor="end">wr_en</text>
+  <text x="556" y="376" text-anchor="end">tim_pstrb[3:0]</text>
+  <text x="556" y="396" text-anchor="end">tim_pwdata[31:0]</text>
+  <text x="724" y="336">wr_err</text>
+  <text x="724" y="356">tim_en</text>
+  <text x="724" y="376">div_en</text>
+  <text x="724" y="396">div_val[3:0]</text>
+  <line class="w" x1="290" y1="340" x2="560" y2="340"/>
+  <line class="w" x1="320" y1="360" x2="560" y2="360"/>
+  <line class="w" x1="350" y1="380" x2="560" y2="380"/>
+  <line class="w" x1="380" y1="400" x2="560" y2="400"/>
+  <!-- ===== blk_tcmp0 ===== -->
+  <g id="blk_tcmp0">
+    <rect class="s" x="560" y="460" width="160" height="120"/>
+    <text x="640" y="525" text-anchor="middle">tcmp0</text>
+  </g>
+  <text x="556" y="476" text-anchor="end">tim_paddr[11:2]</text>
+  <text x="556" y="496" text-anchor="end">wr_en</text>
+  <text x="556" y="516" text-anchor="end">tim_pstrb[3:0]</text>
+  <text x="556" y="536" text-anchor="end">tim_pwdata[31:0]</text>
+  <text x="724" y="516">tcmp0[31:0]</text>
+  <line class="w" x1="290" y1="480" x2="560" y2="480"/>
+  <line class="w" x1="320" y1="500" x2="560" y2="500"/>
+  <line class="w" x1="350" y1="520" x2="560" y2="520"/>
+  <line class="w" x1="380" y1="540" x2="560" y2="540"/>
+  <!-- ===== blk_tcmp1 ===== -->
+  <g id="blk_tcmp1">
+    <rect class="s" x="560" y="600" width="160" height="120"/>
+    <text x="640" y="665" text-anchor="middle">tcmp1</text>
+  </g>
+  <text x="556" y="616" text-anchor="end">tim_paddr[11:2]</text>
+  <text x="556" y="636" text-anchor="end">wr_en</text>
+  <text x="556" y="656" text-anchor="end">tim_pstrb[3:0]</text>
+  <text x="556" y="676" text-anchor="end">tim_pwdata[31:0]</text>
+  <text x="724" y="656">tcmp1[31:0]</text>
+  <line class="w" x1="290" y1="620" x2="560" y2="620"/>
+  <line class="w" x1="320" y1="640" x2="560" y2="640"/>
+  <line class="w" x1="350" y1="660" x2="560" y2="660"/>
+  <line class="w" x1="380" y1="680" x2="560" y2="680"/>
+  <line class="w" x1="290" y1="60" x2="290" y2="900"/>
+  <circle class="dot" cx="290" cy="180" r="4"/>
+  <circle class="dot" cx="290" cy="340" r="4"/>
+  <circle class="dot" cx="290" cy="480" r="4"/>
+  <circle class="dot" cx="290" cy="620" r="4"/>
+  <line class="w" x1="320" y1="80" x2="320" y2="640"/>
+  <circle class="dot" cx="320" cy="200" r="4"/>
+  <circle class="dot" cx="320" cy="360" r="4"/>
+  <circle class="dot" cx="320" cy="500" r="4"/>
+  <line class="w" x1="350" y1="100" x2="350" y2="660"/>
+  <circle class="dot" cx="350" cy="220" r="4"/>
+  <circle class="dot" cx="350" cy="380" r="4"/>
+  <circle class="dot" cx="350" cy="520" r="4"/>
+  <line class="w" x1="380" y1="120" x2="380" y2="680"/>
+  <circle class="dot" cx="380" cy="240" r="4"/>
+  <circle class="dot" cx="380" cy="400" r="4"/>
+  <circle class="dot" cx="380" cy="540" r="4"/>
+  <!-- ===== outputs ===== -->
+  <line class="w" x1="720" y1="180" x2="1420" y2="180"/>
+  <text x="1420" y="176" text-anchor="end">tdr0_wr_en[3:0]</text>
+  <line class="w" x1="720" y1="200" x2="1420" y2="200"/>
+  <text x="1420" y="196" text-anchor="end">tdr1_wr_en[3:0]</text>
+  <line class="w" x1="720" y1="220" x2="1420" y2="220"/>
+  <text x="1420" y="216" text-anchor="end">int_st_clr</text>
+  <line class="w" x1="720" y1="240" x2="1420" y2="240"/>
+  <text x="1420" y="236" text-anchor="end">int_en</text>
+  <line class="w" x1="720" y1="260" x2="1420" y2="260"/>
+  <text x="1420" y="256" text-anchor="end">halt_req</text>
+  <line class="w" x1="720" y1="340" x2="1420" y2="340"/>
+  <text x="1420" y="336" text-anchor="end">wr_err</text>
+  <line class="w" x1="720" y1="360" x2="1420" y2="360"/>
+  <text x="1420" y="356" text-anchor="end">tim_en</text>
+  <line class="w" x1="720" y1="380" x2="1420" y2="380"/>
+  <text x="1420" y="376" text-anchor="end">div_en</text>
+  <line class="w" x1="720" y1="400" x2="1420" y2="400"/>
+  <text x="1420" y="396" text-anchor="end">div_val[3:0]</text>
+  <line class="w" x1="720" y1="520" x2="1420" y2="520"/>
+  <text x="1420" y="516" text-anchor="end">tcmp0[31:0]</text>
+  <line class="w" x1="720" y1="660" x2="1420" y2="660"/>
+  <text x="1420" y="656" text-anchor="end">tcmp1[31:0]</text>
+  <!-- ===== blk_rd_mux: taps of the register outputs ===== -->
+  <circle class="dot" cx="980" cy="360" r="4"/>
+  <path class="w" d="M980,360 V760 H1120"/>
+  <circle class="dot" cx="960" cy="380" r="4"/>
+  <path class="w" d="M960,380 V780 H1120"/>
+  <circle class="dot" cx="940" cy="400" r="4"/>
+  <path class="w" d="M940,400 V800 H1120"/>
+  <circle class="dot" cx="920" cy="520" r="4"/>
+  <path class="w" d="M920,520 V820 H1120"/>
+  <circle class="dot" cx="900" cy="660" r="4"/>
+  <path class="w" d="M900,660 V840 H1120"/>
+  <circle class="dot" cx="880" cy="240" r="4"/>
+  <path class="w" d="M880,240 V860 H1120"/>
+  <circle class="dot" cx="860" cy="260" r="4"/>
+  <path class="w" d="M860,260 V880 H1120"/>
+  <path class="w" d="M290,900 H1120"/>
+  <text x="162" y="924" text-anchor="end">rd_en</text>
+  <line class="w" x1="170" y1="920" x2="1120" y2="920"/>
+  <text x="162" y="944" text-anchor="end">cnt[63:0]</text>
+  <line class="w" x1="170" y1="940" x2="1120" y2="940"/>
+  <text x="162" y="964" text-anchor="end">int_st</text>
+  <line class="w" x1="170" y1="960" x2="1120" y2="960"/>
+  <text x="162" y="984" text-anchor="end">halt_ack</text>
+  <line class="w" x1="170" y1="980" x2="1120" y2="980"/>
+  <g id="blk_rd_mux">
+    <rect class="s" x="1120" y="740" width="140" height="260"/>
+    <text x="1190" y="875" text-anchor="middle">rd_mux</text>
+  </g>
+  <text x="1116" y="756" text-anchor="end">tim_en</text>
+  <text x="1116" y="776" text-anchor="end">div_en</text>
+  <text x="1116" y="796" text-anchor="end">div_val[3:0]</text>
+  <text x="1116" y="816" text-anchor="end">tcmp0[31:0]</text>
+  <text x="1116" y="836" text-anchor="end">tcmp1[31:0]</text>
+  <text x="1116" y="856" text-anchor="end">int_en</text>
+  <text x="1116" y="876" text-anchor="end">halt_req</text>
+  <text x="1116" y="896" text-anchor="end">tim_paddr[11:2]</text>
+  <text x="1116" y="916" text-anchor="end">rd_en</text>
+  <text x="1116" y="936" text-anchor="end">cnt[63:0]</text>
+  <text x="1116" y="956" text-anchor="end">int_st</text>
+  <text x="1116" y="976" text-anchor="end">halt_ack</text>
+  <text x="1264" y="866">rdata[31:0]</text>
+  <line class="w" x1="1260" y1="870" x2="1420" y2="870"/>
+  <text x="1420" y="866" text-anchor="end">rdata[31:0]</text>
+</svg>
