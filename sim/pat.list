@@ -7,6 +7,14 @@
 // --- register ---
 
 // --- cnt_ctrl ---
+TC_CNT_CTRL_001
+TC_CNT_CTRL_002
+TC_CNT_CTRL_003
+TC_CNT_CTRL_004
+TC_CNT_CTRL_005
+TC_CNT_CTRL_006
+TC_CNT_CTRL_007
+TC_CNT_CTRL_008
 
 // --- counter ---
 
