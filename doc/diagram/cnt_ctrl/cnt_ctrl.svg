@@ -7,8 +7,7 @@
 // sys_clk rising edge, sys_rst_n asynchronous active-low (not drawn: clock triangle / reset bubble)
 halt_ack = halted;
 [op_limit]
-limit_full = (9'd1 << div_val) - 9'd1;   // computed on 9 bits
-limit = limit_full[7:0];                 // 0, 1, 3, ..., 255 for div_val 0..8
+limit = ~(8'hFF << div_val);   // 8-bit mask: 0, 1, 3, ..., 255 for div_val 0..8
 [op_match]
 match = (div_cnt == limit);
 [op_inc]
@@ -55,7 +54,7 @@ cnt_clr = tim_en_d & ~tim_en;
   <line class="w" x1="120" y1="280" x2="172" y2="280"/>
   <g id="op_limit">
     <ellipse class="s" cx="220" cy="280" rx="48" ry="20"/>
-    <text x="220" y="285" text-anchor="middle">(1&lt;&lt;n)-1</text>
+    <text x="220" y="285" text-anchor="middle">~(8'hFF&lt;&lt;n)</text>
   </g>
   <line class="w" x1="268" y1="280" x2="384.4" y2="280"/>
   <text x="276" y="296">limit[7:0]</text>
