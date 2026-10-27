@@ -16,7 +16,7 @@
 // ../rtl/counter.v
 
 // --- interrupt ---
-// ../rtl/interrupt.v
+../rtl/interrupt.v
 
 // --- main ---
 // ../rtl/timer_top.v
