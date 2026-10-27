@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="420" viewBox="0 0 1040 420"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : interrupt -->
+  <!-- stage  : 2 - diagram L2 (gate-level logic diagram) -->
+  <!-- source : doc/spec/architecture/interrupt_spec.md -->
+  <desc id="model"><![CDATA[
+// sys_clk rising edge, sys_rst_n asynchronous active-low (not drawn: clock triangle / reset bubble)
+[bus_tcmp]
+tcmp = {tcmp1, tcmp0};
+[op_match]
+cnt_match = (cnt == tcmp);
+[mux_set]
+int_st_set_d = cnt_match ? 1'b1 : int_st;
+[mux_clr]
+int_st_d = int_st_clr ? 1'b0 : int_st_set_d;
+[reg_int_st]
+int_st <= int_st_d @(rst=1'b0);
+[gate_tim_int]
+tim_int = int_st & int_en;
+]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <!-- ===== compare value: tcmp = {tcmp1, tcmp0} ===== -->
+  <text x="112" y="84" text-anchor="end">tcmp1[31:0]</text>
+  <line class="w" x1="120" y1="80" x2="200" y2="80"/>
+  <text x="112" y="114" text-anchor="end">tcmp0[31:0]</text>
+  <line class="w" x1="120" y1="110" x2="200" y2="110"/>
+  <g id="bus_tcmp">
+    <rect class="s" x="200" y="60" width="25" height="70"/>
+  </g>
+  <text x="212.5" y="52" text-anchor="middle">tcmp[63:0]</text>
+  <text x="150" y="75">[63:32]</text>
+  <text x="150" y="105">[31:0]</text>
+  <path class="w" d="M225,95 H270 V120 H304.9"/>
+
+  <!-- ===== compare: cnt_match ===== -->
+  <text x="112" y="144" text-anchor="end">cnt[63:0]</text>
+  <line class="w" x1="120" y1="140" x2="304.9" y2="140"/>
+  <g id="op_match">
+    <ellipse class="s" cx="345" cy="130" rx="45" ry="22"/>
+    <text x="345" y="135" text-anchor="middle">== ?</text>
+  </g>
+  <path class="w" d="M390,130 H415 V290 H495 V232.5"/>
+  <text x="396" y="123">cnt_match</text>
+
+  <!-- ===== set: cnt_match ? 1 : int_st ===== -->
+  <g id="mux_set">
+    <path class="s" d="M480,170 L510,185 L510,225 L480,240 Z"/>
+    <text x="485" y="198">0</text>
+    <text x="485" y="228">1</text>
+  </g>
+  <text x="445" y="228" text-anchor="end">1'b1</text>
+  <line class="w" x1="450" y1="224" x2="480" y2="224"/>
+  <path class="w" d="M510,205 H580 V214 H610"/>
+  <text x="514" y="198">int_st_set_d</text>
+
+  <!-- ===== clear has priority: int_st_clr ? 0 : set ===== -->
+  <g id="mux_clr">
+    <path class="s" d="M610,190 L640,205 L640,245 L610,260 Z"/>
+    <text x="615" y="218">0</text>
+    <text x="615" y="248">1</text>
+  </g>
+  <text x="580" y="248" text-anchor="end">1'b0</text>
+  <line class="w" x1="585" y1="244" x2="610" y2="244"/>
+  <text x="112" y="334" text-anchor="end">int_st_clr</text>
+  <path class="w" d="M120,330 H625 V252.5"/>
+
+  <!-- ===== TISR.INT_ST register ===== -->
+  <line class="w" x1="640" y1="225" x2="710" y2="225"/>
+  <text x="648" y="218">int_st_d</text>
+  <g id="reg_int_st">
+    <rect class="s" x="710" y="170" width="70" height="110"/>
+    <path class="w" d="M710,250 L724,260 L710,270"/>
+    <circle class="s" cx="745" cy="285" r="5"/>
+    <text x="745" y="229" text-anchor="middle">INT_ST</text>
+  </g>
+  <text x="745" y="307" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="780" y1="225" x2="1000" y2="225"/>
+  <text x="1000" y="218" text-anchor="end">int_st</text>
+
+  <!-- int_st hold feedback -->
+  <circle class="dot" cx="810" cy="225" r="4"/>
+  <path class="w" d="M810,225 V40 H460 V194 H480"/>
+  <text x="470" y="34">int_st</text>
+
+  <!-- ===== tim_int = int_st & int_en ===== -->
+  <circle class="dot" cx="860" cy="225" r="4"/>
+  <path class="w" d="M860,225 V355 H890"/>
+  <text x="112" y="379" text-anchor="end">int_en</text>
+  <line class="w" x1="120" y1="375" x2="890" y2="375"/>
+  <g id="gate_tim_int">
+    <path class="s" d="M890,340 H920 A25,25 0 0 1 920,390 H890 Z"/>
+  </g>
+  <line class="w" x1="945" y1="365" x2="1000" y2="365"/>
+  <text x="1000" y="358" text-anchor="end">tim_int</text>
+</svg>
