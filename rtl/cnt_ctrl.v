@@ -7,6 +7,7 @@
 // Spec     : doc/spec/architecture/cnt_ctrl_spec.md
 // Diagram  : doc/diagram/cnt_ctrl/cnt_ctrl.svg (L2)
 // Revision : 1.0 - initial version
+//            1.1 - divider limit as a direct 8-bit mask
 // ============================================================================
 `default_nettype none
 
@@ -30,8 +31,7 @@ module cnt_ctrl (
   reg        tim_en_d;       // previous-cycle TIM_EN
 
   wire       halted;
-  wire [8:0] limit_full;     // (1 << div_val) - 1 on 9 bits
-  wire [7:0] limit;
+  wire [7:0] limit;          // 2^div_val - 1
   wire       match;
   wire       div_clr;
   wire       div_tick;       // ~div_en | match
@@ -49,9 +49,9 @@ module cnt_ctrl (
   // --------------------------------------------------------------------------
   // Divider limit and compare
   // --------------------------------------------------------------------------
-  assign limit_full = (9'd1 << div_val) - 9'd1;
-  assign limit      = limit_full[7:0];
-  assign match      = (div_cnt == limit);
+  // 8-bit mask; div_val = 8: 8'hFF << 8 = 0, inverted to 8'hFF = 255
+  assign limit = ~(8'hFF << div_val);
+  assign match = (div_cnt == limit);
 
   // --------------------------------------------------------------------------
   // div_cnt next value: wrap mux, halt mux, clear mux
