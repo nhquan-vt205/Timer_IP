@@ -172,13 +172,11 @@ module tb_cnt_ctrl;
   // ============================================================
   // 7. Helper Functions
   // ============================================================
-  // Divider limit (1 << div_val) - 1, computed on 9 bits, low 8 bits kept
+  // Divider limit 2^div_val - 1 as an 8-bit mask
   function [7:0] div_limit;
     input [3:0] val;
-    reg   [8:0] full;
     begin
-      full      = (9'd1 << val) - 9'd1;
-      div_limit = full[7:0];
+      div_limit = ~(8'hFF << val);
     end
   endfunction
 
