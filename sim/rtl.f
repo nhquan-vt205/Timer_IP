@@ -10,7 +10,7 @@
 // ../rtl/register.v
 
 // --- cnt_ctrl ---
-// ../rtl/cnt_ctrl.v
+../rtl/cnt_ctrl.v
 
 // --- counter ---
 // ../rtl/counter.v
