@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1310" height="650" viewBox="0 0 1310 650"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : cnt_ctrl -->
+  <!-- stage  : 2 - diagram L2 (gate-level logic diagram) -->
+  <!-- source : doc/spec/architecture/cnt_ctrl_spec.md -->
+  <desc id="model"><![CDATA[
+// sys_clk rising edge, sys_rst_n asynchronous active-low (not drawn: clock triangle / reset bubble)
+halt_ack = halted;
+[op_limit]
+limit_full = (9'd1 << div_val) - 9'd1;   // computed on 9 bits
+limit = limit_full[7:0];                 // 0, 1, 3, ..., 255 for div_val 0..8
+[op_match]
+match = (div_cnt == limit);
+[op_inc]
+div_cnt_inc = div_cnt + 8'd1;
+[mux_wrap]
+div_cnt_wrap = match ? 8'h0 : div_cnt_inc;
+[mux_halt]
+div_cnt_run = halted ? div_cnt : div_cnt_wrap;
+[mux_clr]
+div_cnt_d = div_clr ? 8'h0 : div_cnt_run;
+[reg_div_cnt]
+div_cnt <= div_cnt_d @(rst=8'h0);
+[gate_halted]
+halted = dbg_mode & halt_req;
+[gate_div_tick]
+div_tick = ~div_en | match;
+[gate_div_clr]
+div_clr = ~div_en | ~tim_en;
+[gate_cnt_en]
+cnt_en = ~halted & div_tick & tim_en;
+[reg_tim_en_d]
+tim_en_d <= tim_en @(rst=1'b0);
+[gate_cnt_clr]
+cnt_clr = tim_en_d & ~tim_en;
+]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <!-- ===== div_cnt feedback (over the top) ===== -->
+  <path class="w" d="M956,147 H990 V40 H330 V114 H350"/>
+  <text x="700" y="34">div_cnt[7:0]</text>
+  <circle class="dot" cx="330" cy="114" r="4"/>
+  <path class="w" d="M330,114 V260 H384.4"/>
+  <circle class="dot" cx="605" cy="40" r="4"/>
+  <path class="w" d="M605,40 V155 H640"/>
+
+  <!-- ===== divider limit and compare ===== -->
+  <text x="112" y="284" text-anchor="end">div_val[3:0]</text>
+  <line class="w" x1="120" y1="280" x2="172" y2="280"/>
+  <g id="op_limit">
+    <ellipse class="s" cx="220" cy="280" rx="48" ry="20"/>
+    <text x="220" y="285" text-anchor="middle">(1&lt;&lt;n)-1</text>
+  </g>
+  <line class="w" x1="268" y1="280" x2="384.4" y2="280"/>
+  <text x="276" y="296">limit[7:0]</text>
+  <g id="op_match">
+    <ellipse class="s" cx="420" cy="270" rx="40" ry="22"/>
+    <text x="420" y="275" text-anchor="middle">== ?</text>
+  </g>
+  <path class="w" d="M460,270 H495 V152.5"/>
+  <text x="500" y="215">match</text>
+  <circle class="dot" cx="495" cy="270" r="4"/>
+  <path class="w" d="M495,270 V400 H545.9"/>
+
+  <!-- ===== div_cnt next value: +1, wrap, halt hold, clear ===== -->
+  <g id="op_inc">
+    <ellipse class="s" cx="380" cy="114" rx="30" ry="16"/>
+    <text x="380" y="119" text-anchor="middle">+1</text>
+  </g>
+  <line class="w" x1="410" y1="114" x2="480" y2="114"/>
+  <text x="414" y="107">div_cnt_inc</text>
+  <g id="mux_wrap">
+    <path class="s" d="M480,90 L510,105 L510,145 L480,160 Z"/>
+    <text x="485" y="118">0</text>
+    <text x="485" y="148">1</text>
+  </g>
+  <text x="445" y="148" text-anchor="end">8'h0</text>
+  <line class="w" x1="450" y1="144" x2="480" y2="144"/>
+  <line class="w" x1="510" y1="125" x2="640" y2="125"/>
+  <text x="514" y="118">div_cnt_wrap</text>
+
+  <g id="mux_halt">
+    <path class="s" d="M640,101 L670,116 L670,156 L640,171 Z"/>
+    <text x="645" y="129">0</text>
+    <text x="645" y="159">1</text>
+  </g>
+  <line class="w" x1="670" y1="136" x2="780" y2="136"/>
+  <text x="674" y="129">div_cnt_run</text>
+
+  <g id="mux_clr">
+    <path class="s" d="M780,112 L810,127 L810,167 L780,182 Z"/>
+    <text x="785" y="140">0</text>
+    <text x="785" y="170">1</text>
+  </g>
+  <text x="745" y="170" text-anchor="end">8'h0</text>
+  <line class="w" x1="750" y1="166" x2="780" y2="166"/>
+  <line class="w" x1="810" y1="147" x2="880" y2="147"/>
+  <text x="814" y="140">div_cnt_d</text>
+
+  <g id="reg_div_cnt">
+    <rect class="s" x="886" y="86" width="70" height="110"/>
+    <rect class="s" x="880" y="92" width="70" height="110"/>
+    <path class="w" d="M880,172 L894,182 L880,192"/>
+    <circle class="s" cx="915" cy="207" r="5"/>
+    <text x="915" y="142" text-anchor="middle">div_cnt</text>
+    <text x="915" y="158" text-anchor="middle">[7:0]</text>
+  </g>
+  <text x="915" y="229" text-anchor="middle">sys_rst_n</text>
+
+  <!-- ===== halted = dbg_mode & halt_req ===== -->
+  <text x="112" y="334" text-anchor="end">dbg_mode</text>
+  <line class="w" x1="120" y1="330" x2="380" y2="330"/>
+  <text x="112" y="354" text-anchor="end">halt_req</text>
+  <line class="w" x1="120" y1="350" x2="380" y2="350"/>
+  <g id="gate_halted">
+    <path class="s" d="M380,315 H410 A25,25 0 0 1 410,365 H380 Z"/>
+  </g>
+  <path class="w" d="M435,340 H655 V163.5"/>
+  <text x="440" y="333">halted</text>
+  <circle class="dot" cx="655" cy="340" r="4"/>
+  <line class="w" x1="655" y1="340" x2="1022" y2="340"/>
+  <circle class="dot" cx="960" cy="340" r="4"/>
+  <path class="w" d="M960,340 V290 H1280"/>
+  <text x="1280" y="283" text-anchor="end">halt_ack</text>
+
+  <!-- ===== div_tick = ~div_en | match ===== -->
+  <text x="112" y="424" text-anchor="end">div_en</text>
+  <line class="w" x1="120" y1="420" x2="537.9" y2="420"/>
+  <g id="gate_div_tick">
+    <path class="s" d="M540,385 Q580,385 610,410 Q580,435 540,435 Q554,410 540,385 Z"/>
+    <circle class="s" cx="541.9" cy="420" r="4"/>
+  </g>
+  <path class="w" d="M610,410 H975 V360 H1030"/>
+  <text x="614" y="403">div_tick</text>
+
+  <!-- ===== div_clr = ~div_en | ~tim_en ===== -->
+  <circle class="dot" cx="520" cy="420" r="4"/>
+  <path class="w" d="M520,420 V460 H537.9"/>
+  <text x="112" y="484" text-anchor="end">tim_en</text>
+  <line class="w" x1="120" y1="480" x2="537.9" y2="480"/>
+  <g id="gate_div_clr">
+    <path class="s" d="M540,445 Q580,445 610,470 Q580,495 540,495 Q554,470 540,445 Z"/>
+    <circle class="s" cx="541.9" cy="460" r="4"/>
+    <circle class="s" cx="541.9" cy="480" r="4"/>
+  </g>
+  <path class="w" d="M610,470 H795 V174.5"/>
+  <text x="614" y="463">div_clr</text>
+
+  <!-- ===== cnt_en = tim_en & ~halted & div_tick ===== -->
+  <circle class="dot" cx="510" cy="480" r="4"/>
+  <path class="w" d="M510,480 V520 H1040"/>
+  <circle class="dot" cx="1000" cy="520" r="4"/>
+  <path class="w" d="M1000,520 V380 H1030"/>
+  <g id="gate_cnt_en">
+    <path class="s" d="M1030,325 H1060 A35,35 0 0 1 1060,395 H1030 Z"/>
+    <circle class="s" cx="1026" cy="340" r="4"/>
+  </g>
+  <line class="w" x1="1095" y1="360" x2="1280" y2="360"/>
+  <text x="1280" y="353" text-anchor="end">cnt_en</text>
+
+  <!-- ===== cnt_clr = tim_en_d & ~tim_en ===== -->
+  <g id="reg_tim_en_d">
+    <rect class="s" x="1040" y="465" width="70" height="110"/>
+    <path class="w" d="M1040,545 L1054,555 L1040,565"/>
+    <circle class="s" cx="1075" cy="580" r="5"/>
+    <text x="1075" y="524" text-anchor="middle">tim_en_d</text>
+  </g>
+  <text x="1075" y="602" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="1110" y1="520" x2="1180" y2="520"/>
+  <text x="1114" y="513">tim_en_d</text>
+  <circle class="dot" cx="1020" cy="520" r="4"/>
+  <path class="w" d="M1020,520 V625 H1160 V540 H1172"/>
+  <g id="gate_cnt_clr">
+    <path class="s" d="M1180,505 H1210 A25,25 0 0 1 1210,555 H1180 Z"/>
+    <circle class="s" cx="1176" cy="540" r="4"/>
+  </g>
+  <line class="w" x1="1235" y1="530" x2="1280" y2="530"/>
+  <text x="1280" y="523" text-anchor="end">cnt_clr</text>
+</svg>
