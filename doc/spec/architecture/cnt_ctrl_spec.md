@@ -27,7 +27,7 @@ _VI:_ Tạo tín hiệu cho phép đếm `cnt_en` cho `counter`: mọi chu kỳ 
 | Signal | Width | Kind | Equation |
 | --- | --- | --- | --- |
 | `halted` | 1 | comb | `dbg_mode & halt_req`; `halt_ack` = `halted` |
-| `limit` | 8 | comb | `(1 << div_val) - 1`, computed on 9 bits, low 8 bits kept → 0, 1, 3, …, 255 for `div_val` 0..8 |
+| `limit` | 8 | comb | `~(8'hFF << div_val)` = 2^`div_val` - 1 as an 8-bit mask → 0, 1, 3, …, 255 for `div_val` 0..8 |
 | `match` | 1 | comb | `div_cnt == limit` |
 | `div_clr` | 1 | comb | `~tim_en \| ~div_en` |
 | `div_cnt` | 8 | FF, reset 8'h0 | D = `div_clr ? 8'h0 : (halted ? div_cnt : (match ? 8'h0 : div_cnt + 8'd1))` |
