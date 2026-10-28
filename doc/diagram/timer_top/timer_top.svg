@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : timer_top -->
+  <!-- stage  : 2 - diagram L0 (child blocks, no glue logic) -->
+  <!-- source : doc/spec/architecture/timer_top_spec.md + port tables of apb_slave, register, cnt_ctrl, counter, interrupt -->
+  <desc id="model"><![CDATA[
+// sys_clk / sys_rst_n go to every instance (not drawn). No glue logic: the top only
+// instantiates and connects; every internal net has the name of the sub-module port.
+[u_apb_slave]
+apb_slave u_apb_slave (.tim_psel(tim_psel), .tim_penable(tim_penable), .tim_pwrite(tim_pwrite),
+                       .wr_err(wr_err), .rdata(rdata), .tim_prdata(tim_prdata),
+                       .tim_pready(tim_pready), .tim_pslverr(tim_pslverr),
+                       .wr_en(wr_en), .rd_en(rd_en));
+[u_register]
+register u_register (.wr_en(wr_en), .rd_en(rd_en), .tim_paddr(tim_paddr), .tim_pwdata(tim_pwdata),
+                     .tim_pstrb(tim_pstrb), .cnt(cnt), .int_st(int_st), .halt_ack(halt_ack),
+                     .wr_err(wr_err), .rdata(rdata), .tim_en(tim_en), .div_en(div_en),
+                     .div_val(div_val), .halt_req(halt_req), .tdr0_wr_en(tdr0_wr_en),
+                     .tdr1_wr_en(tdr1_wr_en), .tcmp0(tcmp0), .tcmp1(tcmp1), .int_en(int_en),
+                     .int_st_clr(int_st_clr));
+[u_cnt_ctrl]
+cnt_ctrl u_cnt_ctrl (.tim_en(tim_en), .div_en(div_en), .div_val(div_val), .halt_req(halt_req),
+                     .dbg_mode(dbg_mode), .halt_ack(halt_ack), .cnt_en(cnt_en), .cnt_clr(cnt_clr));
+[u_counter]
+counter u_counter (.cnt_en(cnt_en), .cnt_clr(cnt_clr), .tdr0_wr_en(tdr0_wr_en),
+                   .tdr1_wr_en(tdr1_wr_en), .tim_pwdata(tim_pwdata), .cnt(cnt));
+[u_interrupt]
+interrupt u_interrupt (.cnt(cnt), .tcmp0(tcmp0), .tcmp1(tcmp1), .int_en(int_en),
+                       .int_st_clr(int_st_clr), .int_st(int_st), .tim_int(tim_int));
+// Internal nets: wr_en, rd_en, wr_err 1; rdata[31:0]; tim_en, div_en 1; div_val[3:0];
+// halt_req, halt_ack 1; tdr0_wr_en[3:0], tdr1_wr_en[3:0]; tcmp0[31:0], tcmp1[31:0];
+// int_en, int_st_clr, int_st 1; cnt_en, cnt_clr 1; cnt[63:0].
+  ]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <!-- ===== dbg_mode -> u_cnt_ctrl ===== -->
+  <text x="152" y="84" text-anchor="end">dbg_mode</text>
+  <path class="w" d="M160,80 H1180 V120"/>
+  <text x="1184" y="114">dbg_mode</text>
+
+  <!-- ===== tim_pwdata / tim_paddr / tim_pstrb -> u_register ===== -->
+  <text x="152" y="164" text-anchor="end">tim_pwdata[31:0]</text>
+  <line class="w" x1="160" y1="160" x2="660" y2="160"/>
+  <text x="656" y="156" text-anchor="end">tim_pwdata[31:0]</text>
+  <text x="152" y="204" text-anchor="end">tim_paddr[11:0]</text>
+  <line class="w" x1="160" y1="200" x2="660" y2="200"/>
+  <text x="656" y="196" text-anchor="end">tim_paddr[11:0]</text>
+  <text x="152" y="244" text-anchor="end">tim_pstrb[3:0]</text>
+  <line class="w" x1="160" y1="240" x2="660" y2="240"/>
+  <text x="656" y="236" text-anchor="end">tim_pstrb[3:0]</text>
+  <circle class="dot" cx="520" cy="160" r="4"/>
+  <!-- tim_pwdata branch -> u_counter (crosses dbg_mode, no dot) -->
+  <path class="w" d="M520,160 V40 H1400 V460 H1260"/>
+  <text x="1264" y="456">tim_pwdata[31:0]</text>
+
+  <!-- ===== u_apb_slave ===== -->
+  <text x="152" y="344" text-anchor="end">tim_psel</text>
+  <line class="w" x1="160" y1="340" x2="240" y2="340"/>
+  <text x="236" y="336" text-anchor="end">tim_psel</text>
+  <text x="152" y="384" text-anchor="end">tim_penable</text>
+  <line class="w" x1="160" y1="380" x2="240" y2="380"/>
+  <text x="236" y="376" text-anchor="end">tim_penable</text>
+  <text x="152" y="424" text-anchor="end">tim_pwrite</text>
+  <line class="w" x1="160" y1="420" x2="240" y2="420"/>
+  <text x="236" y="416" text-anchor="end">tim_pwrite</text>
+  <g id="u_apb_slave">
+    <rect class="s" x="240" y="300" width="200" height="240"/>
+    <text x="340" y="416" text-anchor="middle">u_apb_slave</text>
+    <text x="340" y="434" text-anchor="middle">apb_slave</text>
+  </g>
+  <!-- u_apb_slave <-> u_register -->
+  <line class="w" x1="440" y1="340" x2="660" y2="340"/>
+  <text x="444" y="336">wr_en</text>
+  <text x="656" y="336" text-anchor="end">wr_en</text>
+  <line class="w" x1="440" y1="380" x2="660" y2="380"/>
+  <text x="444" y="376">rd_en</text>
+  <text x="656" y="376" text-anchor="end">rd_en</text>
+  <line class="w" x1="440" y1="440" x2="660" y2="440"/>
+  <text x="444" y="436">wr_err</text>
+  <text x="656" y="436" text-anchor="end">wr_err</text>
+  <line class="w" x1="440" y1="480" x2="660" y2="480"/>
+  <text x="444" y="476">rdata[31:0]</text>
+  <text x="656" y="476" text-anchor="end">rdata[31:0]</text>
+  <!-- APB outputs leave the bottom edge and run under the design -->
+  <path class="w" d="M270,540 V1040 H1560"/>
+  <text x="266" y="556" text-anchor="end">tim_prdata[31:0]</text>
+  <text x="1560" y="1036" text-anchor="end">tim_prdata[31:0]</text>
+  <path class="w" d="M320,540 V1020 H1560"/>
+  <text x="324" y="556">tim_pready</text>
+  <text x="1560" y="1016" text-anchor="end">tim_pready</text>
+  <path class="w" d="M410,540 V1000 H1560"/>
+  <text x="414" y="556">tim_pslverr</text>
+  <text x="1560" y="996" text-anchor="end">tim_pslverr</text>
+
+  <!-- ===== u_register ===== -->
+  <g id="u_register">
+    <rect class="s" x="660" y="120" width="200" height="840"/>
+    <text x="760" y="536" text-anchor="middle">u_register</text>
+    <text x="760" y="554" text-anchor="middle">register</text>
+  </g>
+
+  <!-- ===== u_register <-> u_cnt_ctrl ===== -->
+  <line class="w" x1="860" y1="160" x2="1100" y2="160"/>
+  <text x="864" y="156">tim_en</text>
+  <text x="1096" y="156" text-anchor="end">tim_en</text>
+  <line class="w" x1="860" y1="200" x2="1100" y2="200"/>
+  <text x="864" y="196">div_en</text>
+  <text x="1096" y="196" text-anchor="end">div_en</text>
+  <line class="w" x1="860" y1="240" x2="1100" y2="240"/>
+  <text x="864" y="236">div_val[3:0]</text>
+  <text x="1096" y="236" text-anchor="end">div_val[3:0]</text>
+  <line class="w" x1="860" y1="280" x2="1100" y2="280"/>
+  <text x="864" y="276">halt_req</text>
+  <text x="1096" y="276" text-anchor="end">halt_req</text>
+  <line class="w" x1="860" y1="320" x2="1100" y2="320"/>
+  <text x="864" y="316">halt_ack</text>
+  <text x="1096" y="316" text-anchor="end">halt_ack</text>
+  <g id="u_cnt_ctrl">
+    <rect class="s" x="1100" y="120" width="160" height="220"/>
+    <text x="1180" y="226" text-anchor="middle">u_cnt_ctrl</text>
+    <text x="1180" y="244" text-anchor="middle">cnt_ctrl</text>
+  </g>
+  <!-- u_cnt_ctrl -> u_counter (bottom edge -> top edge) -->
+  <line class="w" x1="1140" y1="340" x2="1140" y2="420"/>
+  <text x="1144" y="356">cnt_en</text>
+  <text x="1144" y="414">cnt_en</text>
+  <line class="w" x1="1220" y1="340" x2="1220" y2="420"/>
+  <text x="1224" y="356">cnt_clr</text>
+  <text x="1224" y="414">cnt_clr</text>
+
+  <!-- ===== u_register -> u_counter ===== -->
+  <line class="w" x1="860" y1="460" x2="1100" y2="460"/>
+  <text x="864" y="456">tdr0_wr_en[3:0]</text>
+  <text x="1096" y="456" text-anchor="end">tdr0_wr_en[3:0]</text>
+  <line class="w" x1="860" y1="500" x2="1100" y2="500"/>
+  <text x="864" y="496">tdr1_wr_en[3:0]</text>
+  <text x="1096" y="496" text-anchor="end">tdr1_wr_en[3:0]</text>
+  <g id="u_counter">
+    <rect class="s" x="1100" y="420" width="160" height="180"/>
+    <text x="1180" y="506" text-anchor="middle">u_counter</text>
+    <text x="1180" y="524" text-anchor="middle">counter</text>
+  </g>
+  <!-- cnt: u_counter bottom edge -> u_interrupt top edge, branch -> u_register -->
+  <line class="w" x1="1180" y1="600" x2="1180" y2="720"/>
+  <text x="1184" y="616">cnt[63:0]</text>
+  <circle class="dot" cx="1180" cy="680" r="4"/>
+  <line class="w" x1="1180" y1="680" x2="860" y2="680"/>
+  <text x="864" y="676">cnt[63:0]</text>
+  <text x="1184" y="714">cnt[63:0]</text>
+
+  <!-- ===== u_register <-> u_interrupt ===== -->
+  <line class="w" x1="860" y1="760" x2="1100" y2="760"/>
+  <text x="864" y="756">tcmp0[31:0]</text>
+  <text x="1096" y="756" text-anchor="end">tcmp0[31:0]</text>
+  <line class="w" x1="860" y1="800" x2="1100" y2="800"/>
+  <text x="864" y="796">tcmp1[31:0]</text>
+  <text x="1096" y="796" text-anchor="end">tcmp1[31:0]</text>
+  <line class="w" x1="860" y1="840" x2="1100" y2="840"/>
+  <text x="864" y="836">int_en</text>
+  <text x="1096" y="836" text-anchor="end">int_en</text>
+  <line class="w" x1="860" y1="880" x2="1100" y2="880"/>
+  <text x="864" y="876">int_st_clr</text>
+  <text x="1096" y="876" text-anchor="end">int_st_clr</text>
+  <line class="w" x1="860" y1="920" x2="1100" y2="920"/>
+  <text x="864" y="916">int_st</text>
+  <text x="1096" y="916" text-anchor="end">int_st</text>
+  <g id="u_interrupt">
+    <rect class="s" x="1100" y="720" width="160" height="240"/>
+    <text x="1180" y="836" text-anchor="middle">u_interrupt</text>
+    <text x="1180" y="854" text-anchor="middle">interrupt</text>
+  </g>
+  <line class="w" x1="1260" y1="840" x2="1560" y2="840"/>
+  <text x="1264" y="836">tim_int</text>
+  <text x="1560" y="836" text-anchor="end">tim_int</text>
+</svg>
