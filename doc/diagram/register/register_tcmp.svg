@@ -1,0 +1,339 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1560" viewBox="0 0 960 1560"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- module : register -->
+  <!-- stage  : 2 - diagram L1 (TCMP0 / TCMP1 byte registers) -->
+  <!-- source : doc/spec/architecture/register_spec.md + doc/spec/register_file/register_map.md -->
+  <!-- scope  : from wr_en, sel_tcmp0, sel_tcmp1, tim_pstrb, tim_pwdata to tcmp0, tcmp1 -->
+  <desc id="model"><![CDATA[
+// Scope view (gate-level detail of blk_tcmp0 / blk_tcmp1 in register.svg). S3 reads register.svg.
+// sys_clk rising edge, sys_rst_n asynchronous active-low (clock triangle / reset bubble).
+[gate_tcmp0_we]
+tcmp0_we = wr_en & sel_tcmp0;
+[gate_tcmp0_bwe0]
+tcmp0_bwe[0] = tcmp0_we & tim_pstrb[0];
+[mux_tcmp0_b0]
+tcmp0_d[7:0] = tcmp0_bwe[0] ? tim_pwdata[7:0] : tcmp0[7:0];
+[reg_tcmp0_b0]
+tcmp0[7:0] <= tcmp0_d[7:0] @(rst=8'hFF);
+[gate_tcmp0_bwe1]
+tcmp0_bwe[1] = tcmp0_we & tim_pstrb[1];
+[mux_tcmp0_b1]
+tcmp0_d[15:8] = tcmp0_bwe[1] ? tim_pwdata[15:8] : tcmp0[15:8];
+[reg_tcmp0_b1]
+tcmp0[15:8] <= tcmp0_d[15:8] @(rst=8'hFF);
+[gate_tcmp0_bwe2]
+tcmp0_bwe[2] = tcmp0_we & tim_pstrb[2];
+[mux_tcmp0_b2]
+tcmp0_d[23:16] = tcmp0_bwe[2] ? tim_pwdata[23:16] : tcmp0[23:16];
+[reg_tcmp0_b2]
+tcmp0[23:16] <= tcmp0_d[23:16] @(rst=8'hFF);
+[gate_tcmp0_bwe3]
+tcmp0_bwe[3] = tcmp0_we & tim_pstrb[3];
+[mux_tcmp0_b3]
+tcmp0_d[31:24] = tcmp0_bwe[3] ? tim_pwdata[31:24] : tcmp0[31:24];
+[reg_tcmp0_b3]
+tcmp0[31:24] <= tcmp0_d[31:24] @(rst=8'hFF);
+[gate_tcmp1_we]
+tcmp1_we = wr_en & sel_tcmp1;
+[gate_tcmp1_bwe0]
+tcmp1_bwe[0] = tcmp1_we & tim_pstrb[0];
+[mux_tcmp1_b0]
+tcmp1_d[7:0] = tcmp1_bwe[0] ? tim_pwdata[7:0] : tcmp1[7:0];
+[reg_tcmp1_b0]
+tcmp1[7:0] <= tcmp1_d[7:0] @(rst=8'hFF);
+[gate_tcmp1_bwe1]
+tcmp1_bwe[1] = tcmp1_we & tim_pstrb[1];
+[mux_tcmp1_b1]
+tcmp1_d[15:8] = tcmp1_bwe[1] ? tim_pwdata[15:8] : tcmp1[15:8];
+[reg_tcmp1_b1]
+tcmp1[15:8] <= tcmp1_d[15:8] @(rst=8'hFF);
+[gate_tcmp1_bwe2]
+tcmp1_bwe[2] = tcmp1_we & tim_pstrb[2];
+[mux_tcmp1_b2]
+tcmp1_d[23:16] = tcmp1_bwe[2] ? tim_pwdata[23:16] : tcmp1[23:16];
+[reg_tcmp1_b2]
+tcmp1[23:16] <= tcmp1_d[23:16] @(rst=8'hFF);
+[gate_tcmp1_bwe3]
+tcmp1_bwe[3] = tcmp1_we & tim_pstrb[3];
+[mux_tcmp1_b3]
+tcmp1_d[31:24] = tcmp1_bwe[3] ? tim_pwdata[31:24] : tcmp1[31:24];
+[reg_tcmp1_b3]
+tcmp1[31:24] <= tcmp1_d[31:24] @(rst=8'hFF);
+]]></desc>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .s{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    text{fill:#000}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <!-- ===== TCMP0 ===== -->
+  <g id="gate_tcmp0_we">
+    <path class="s" d="M250,30 H280 A25,25 0 0 1 280,80 H250 Z"/>
+  </g>
+  <text x="172" y="49" text-anchor="end">wr_en</text>
+  <line class="w" x1="180" y1="45" x2="250" y2="45"/>
+  <text x="172" y="69" text-anchor="end">sel_tcmp0</text>
+  <line class="w" x1="180" y1="65" x2="250" y2="65"/>
+  <text x="311" y="51">tcmp0_we</text>
+  <g id="mux_tcmp0_b0">
+    <path class="s" d="M520,130 L550,145 L550,185 L520,200 Z"/>
+    <text x="525" y="158">0</text>
+    <text x="525" y="188">1</text>
+  </g>
+  <text x="172" y="188" text-anchor="end">tim_pwdata[7:0]</text>
+  <line class="w" x1="180" y1="184" x2="520" y2="184"/>
+  <line class="w" x1="550" y1="165" x2="600" y2="165"/>
+  <g id="reg_tcmp0_b0">
+    <rect class="s" x="606" y="104" width="70" height="110"/>
+    <rect class="s" x="600" y="110" width="70" height="110"/>
+    <path class="w" d="M600,190 L614,200 L600,210"/>
+    <circle class="s" cx="635" cy="225" r="5"/>
+    <text x="635" y="160" text-anchor="middle">TCMP0</text>
+    <text x="635" y="176" text-anchor="middle">[7:0]</text>
+  </g>
+  <text x="635" y="247" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="676" y1="165" x2="780" y2="165"/>
+  <text x="740" y="160">[7:0]</text>
+  <circle class="dot" cx="700" cy="165" r="4"/>
+  <path class="w" d="M700,165 V90 H490 V154 H520"/>
+  <g id="gate_tcmp0_bwe0">
+    <path class="s" d="M400,200 H430 A25,25 0 0 1 430,250 H400 Z"/>
+  </g>
+  <circle class="dot" cx="370" cy="215" r="4"/>
+  <line class="w" x1="370" y1="215" x2="400" y2="215"/>
+  <text x="172" y="239" text-anchor="end">tim_pstrb[0]</text>
+  <line class="w" x1="180" y1="235" x2="400" y2="235"/>
+  <path class="w" d="M455,225 H535 V192.5"/>
+  <text x="461" y="241">tcmp0_bwe[0]</text>
+  <g id="mux_tcmp0_b1">
+    <path class="s" d="M520,300 L550,315 L550,355 L520,370 Z"/>
+    <text x="525" y="328">0</text>
+    <text x="525" y="358">1</text>
+  </g>
+  <text x="172" y="358" text-anchor="end">tim_pwdata[15:8]</text>
+  <line class="w" x1="180" y1="354" x2="520" y2="354"/>
+  <line class="w" x1="550" y1="335" x2="600" y2="335"/>
+  <g id="reg_tcmp0_b1">
+    <rect class="s" x="606" y="274" width="70" height="110"/>
+    <rect class="s" x="600" y="280" width="70" height="110"/>
+    <path class="w" d="M600,360 L614,370 L600,380"/>
+    <circle class="s" cx="635" cy="395" r="5"/>
+    <text x="635" y="330" text-anchor="middle">TCMP0</text>
+    <text x="635" y="346" text-anchor="middle">[15:8]</text>
+  </g>
+  <text x="635" y="417" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="676" y1="335" x2="780" y2="335"/>
+  <text x="740" y="330">[15:8]</text>
+  <circle class="dot" cx="700" cy="335" r="4"/>
+  <path class="w" d="M700,335 V260 H490 V324 H520"/>
+  <g id="gate_tcmp0_bwe1">
+    <path class="s" d="M400,370 H430 A25,25 0 0 1 430,420 H400 Z"/>
+  </g>
+  <circle class="dot" cx="370" cy="385" r="4"/>
+  <line class="w" x1="370" y1="385" x2="400" y2="385"/>
+  <text x="172" y="409" text-anchor="end">tim_pstrb[1]</text>
+  <line class="w" x1="180" y1="405" x2="400" y2="405"/>
+  <path class="w" d="M455,395 H535 V362.5"/>
+  <text x="461" y="411">tcmp0_bwe[1]</text>
+  <g id="mux_tcmp0_b2">
+    <path class="s" d="M520,470 L550,485 L550,525 L520,540 Z"/>
+    <text x="525" y="498">0</text>
+    <text x="525" y="528">1</text>
+  </g>
+  <text x="172" y="528" text-anchor="end">tim_pwdata[23:16]</text>
+  <line class="w" x1="180" y1="524" x2="520" y2="524"/>
+  <line class="w" x1="550" y1="505" x2="600" y2="505"/>
+  <g id="reg_tcmp0_b2">
+    <rect class="s" x="606" y="444" width="70" height="110"/>
+    <rect class="s" x="600" y="450" width="70" height="110"/>
+    <path class="w" d="M600,530 L614,540 L600,550"/>
+    <circle class="s" cx="635" cy="565" r="5"/>
+    <text x="635" y="500" text-anchor="middle">TCMP0</text>
+    <text x="635" y="516" text-anchor="middle">[23:16]</text>
+  </g>
+  <text x="635" y="587" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="676" y1="505" x2="780" y2="505"/>
+  <text x="740" y="500">[23:16]</text>
+  <circle class="dot" cx="700" cy="505" r="4"/>
+  <path class="w" d="M700,505 V430 H490 V494 H520"/>
+  <g id="gate_tcmp0_bwe2">
+    <path class="s" d="M400,540 H430 A25,25 0 0 1 430,590 H400 Z"/>
+  </g>
+  <circle class="dot" cx="370" cy="555" r="4"/>
+  <line class="w" x1="370" y1="555" x2="400" y2="555"/>
+  <text x="172" y="579" text-anchor="end">tim_pstrb[2]</text>
+  <line class="w" x1="180" y1="575" x2="400" y2="575"/>
+  <path class="w" d="M455,565 H535 V532.5"/>
+  <text x="461" y="581">tcmp0_bwe[2]</text>
+  <g id="mux_tcmp0_b3">
+    <path class="s" d="M520,640 L550,655 L550,695 L520,710 Z"/>
+    <text x="525" y="668">0</text>
+    <text x="525" y="698">1</text>
+  </g>
+  <text x="172" y="698" text-anchor="end">tim_pwdata[31:24]</text>
+  <line class="w" x1="180" y1="694" x2="520" y2="694"/>
+  <line class="w" x1="550" y1="675" x2="600" y2="675"/>
+  <g id="reg_tcmp0_b3">
+    <rect class="s" x="606" y="614" width="70" height="110"/>
+    <rect class="s" x="600" y="620" width="70" height="110"/>
+    <path class="w" d="M600,700 L614,710 L600,720"/>
+    <circle class="s" cx="635" cy="735" r="5"/>
+    <text x="635" y="670" text-anchor="middle">TCMP0</text>
+    <text x="635" y="686" text-anchor="middle">[31:24]</text>
+  </g>
+  <text x="635" y="757" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="676" y1="675" x2="780" y2="675"/>
+  <text x="740" y="670">[31:24]</text>
+  <circle class="dot" cx="700" cy="675" r="4"/>
+  <path class="w" d="M700,675 V600 H490 V664 H520"/>
+  <g id="gate_tcmp0_bwe3">
+    <path class="s" d="M400,710 H430 A25,25 0 0 1 430,760 H400 Z"/>
+  </g>
+  <path class="w" d="M305,55 H370 V725 H400"/>
+  <text x="172" y="749" text-anchor="end">tim_pstrb[3]</text>
+  <line class="w" x1="180" y1="745" x2="400" y2="745"/>
+  <path class="w" d="M455,735 H535 V702.5"/>
+  <text x="461" y="751">tcmp0_bwe[3]</text>
+  <g id="bus_tcmp0">
+    <rect class="s" x="780" y="135" width="25" height="570"/>
+  </g>
+  <text x="792.5" y="127" text-anchor="middle">TCMP0[31:0]</text>
+  <line class="w" x1="805" y1="420" x2="920" y2="420"/>
+  <text x="920" y="416" text-anchor="end">tcmp0[31:0]</text>
+  <!-- ===== TCMP1 ===== -->
+  <g id="gate_tcmp1_we">
+    <path class="s" d="M250,800 H280 A25,25 0 0 1 280,850 H250 Z"/>
+  </g>
+  <text x="172" y="819" text-anchor="end">wr_en</text>
+  <line class="w" x1="180" y1="815" x2="250" y2="815"/>
+  <text x="172" y="839" text-anchor="end">sel_tcmp1</text>
+  <line class="w" x1="180" y1="835" x2="250" y2="835"/>
+  <text x="311" y="821">tcmp1_we</text>
+  <g id="mux_tcmp1_b0">
+    <path class="s" d="M520,900 L550,915 L550,955 L520,970 Z"/>
+    <text x="525" y="928">0</text>
+    <text x="525" y="958">1</text>
+  </g>
+  <text x="172" y="958" text-anchor="end">tim_pwdata[7:0]</text>
+  <line class="w" x1="180" y1="954" x2="520" y2="954"/>
+  <line class="w" x1="550" y1="935" x2="600" y2="935"/>
+  <g id="reg_tcmp1_b0">
+    <rect class="s" x="606" y="874" width="70" height="110"/>
+    <rect class="s" x="600" y="880" width="70" height="110"/>
+    <path class="w" d="M600,960 L614,970 L600,980"/>
+    <circle class="s" cx="635" cy="995" r="5"/>
+    <text x="635" y="930" text-anchor="middle">TCMP1</text>
+    <text x="635" y="946" text-anchor="middle">[7:0]</text>
+  </g>
+  <text x="635" y="1017" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="676" y1="935" x2="780" y2="935"/>
+  <text x="740" y="930">[7:0]</text>
+  <circle class="dot" cx="700" cy="935" r="4"/>
+  <path class="w" d="M700,935 V860 H490 V924 H520"/>
+  <g id="gate_tcmp1_bwe0">
+    <path class="s" d="M400,970 H430 A25,25 0 0 1 430,1020 H400 Z"/>
+  </g>
+  <circle class="dot" cx="370" cy="985" r="4"/>
+  <line class="w" x1="370" y1="985" x2="400" y2="985"/>
+  <text x="172" y="1009" text-anchor="end">tim_pstrb[0]</text>
+  <line class="w" x1="180" y1="1005" x2="400" y2="1005"/>
+  <path class="w" d="M455,995 H535 V962.5"/>
+  <text x="461" y="1011">tcmp1_bwe[0]</text>
+  <g id="mux_tcmp1_b1">
+    <path class="s" d="M520,1070 L550,1085 L550,1125 L520,1140 Z"/>
+    <text x="525" y="1098">0</text>
+    <text x="525" y="1128">1</text>
+  </g>
+  <text x="172" y="1128" text-anchor="end">tim_pwdata[15:8]</text>
+  <line class="w" x1="180" y1="1124" x2="520" y2="1124"/>
+  <line class="w" x1="550" y1="1105" x2="600" y2="1105"/>
+  <g id="reg_tcmp1_b1">
+    <rect class="s" x="606" y="1044" width="70" height="110"/>
+    <rect class="s" x="600" y="1050" width="70" height="110"/>
+    <path class="w" d="M600,1130 L614,1140 L600,1150"/>
+    <circle class="s" cx="635" cy="1165" r="5"/>
+    <text x="635" y="1100" text-anchor="middle">TCMP1</text>
+    <text x="635" y="1116" text-anchor="middle">[15:8]</text>
+  </g>
+  <text x="635" y="1187" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="676" y1="1105" x2="780" y2="1105"/>
+  <text x="740" y="1100">[15:8]</text>
+  <circle class="dot" cx="700" cy="1105" r="4"/>
+  <path class="w" d="M700,1105 V1030 H490 V1094 H520"/>
+  <g id="gate_tcmp1_bwe1">
+    <path class="s" d="M400,1140 H430 A25,25 0 0 1 430,1190 H400 Z"/>
+  </g>
+  <circle class="dot" cx="370" cy="1155" r="4"/>
+  <line class="w" x1="370" y1="1155" x2="400" y2="1155"/>
+  <text x="172" y="1179" text-anchor="end">tim_pstrb[1]</text>
+  <line class="w" x1="180" y1="1175" x2="400" y2="1175"/>
+  <path class="w" d="M455,1165 H535 V1132.5"/>
+  <text x="461" y="1181">tcmp1_bwe[1]</text>
+  <g id="mux_tcmp1_b2">
+    <path class="s" d="M520,1240 L550,1255 L550,1295 L520,1310 Z"/>
+    <text x="525" y="1268">0</text>
+    <text x="525" y="1298">1</text>
+  </g>
+  <text x="172" y="1298" text-anchor="end">tim_pwdata[23:16]</text>
+  <line class="w" x1="180" y1="1294" x2="520" y2="1294"/>
+  <line class="w" x1="550" y1="1275" x2="600" y2="1275"/>
+  <g id="reg_tcmp1_b2">
+    <rect class="s" x="606" y="1214" width="70" height="110"/>
+    <rect class="s" x="600" y="1220" width="70" height="110"/>
+    <path class="w" d="M600,1300 L614,1310 L600,1320"/>
+    <circle class="s" cx="635" cy="1335" r="5"/>
+    <text x="635" y="1270" text-anchor="middle">TCMP1</text>
+    <text x="635" y="1286" text-anchor="middle">[23:16]</text>
+  </g>
+  <text x="635" y="1357" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="676" y1="1275" x2="780" y2="1275"/>
+  <text x="740" y="1270">[23:16]</text>
+  <circle class="dot" cx="700" cy="1275" r="4"/>
+  <path class="w" d="M700,1275 V1200 H490 V1264 H520"/>
+  <g id="gate_tcmp1_bwe2">
+    <path class="s" d="M400,1310 H430 A25,25 0 0 1 430,1360 H400 Z"/>
+  </g>
+  <circle class="dot" cx="370" cy="1325" r="4"/>
+  <line class="w" x1="370" y1="1325" x2="400" y2="1325"/>
+  <text x="172" y="1349" text-anchor="end">tim_pstrb[2]</text>
+  <line class="w" x1="180" y1="1345" x2="400" y2="1345"/>
+  <path class="w" d="M455,1335 H535 V1302.5"/>
+  <text x="461" y="1351">tcmp1_bwe[2]</text>
+  <g id="mux_tcmp1_b3">
+    <path class="s" d="M520,1410 L550,1425 L550,1465 L520,1480 Z"/>
+    <text x="525" y="1438">0</text>
+    <text x="525" y="1468">1</text>
+  </g>
+  <text x="172" y="1468" text-anchor="end">tim_pwdata[31:24]</text>
+  <line class="w" x1="180" y1="1464" x2="520" y2="1464"/>
+  <line class="w" x1="550" y1="1445" x2="600" y2="1445"/>
+  <g id="reg_tcmp1_b3">
+    <rect class="s" x="606" y="1384" width="70" height="110"/>
+    <rect class="s" x="600" y="1390" width="70" height="110"/>
+    <path class="w" d="M600,1470 L614,1480 L600,1490"/>
+    <circle class="s" cx="635" cy="1505" r="5"/>
+    <text x="635" y="1440" text-anchor="middle">TCMP1</text>
+    <text x="635" y="1456" text-anchor="middle">[31:24]</text>
+  </g>
+  <text x="635" y="1527" text-anchor="middle">sys_rst_n</text>
+  <line class="w" x1="676" y1="1445" x2="780" y2="1445"/>
+  <text x="740" y="1440">[31:24]</text>
+  <circle class="dot" cx="700" cy="1445" r="4"/>
+  <path class="w" d="M700,1445 V1370 H490 V1434 H520"/>
+  <g id="gate_tcmp1_bwe3">
+    <path class="s" d="M400,1480 H430 A25,25 0 0 1 430,1530 H400 Z"/>
+  </g>
+  <path class="w" d="M305,825 H370 V1495 H400"/>
+  <text x="172" y="1519" text-anchor="end">tim_pstrb[3]</text>
+  <line class="w" x1="180" y1="1515" x2="400" y2="1515"/>
+  <path class="w" d="M455,1505 H535 V1472.5"/>
+  <text x="461" y="1521">tcmp1_bwe[3]</text>
+  <g id="bus_tcmp1">
+    <rect class="s" x="780" y="905" width="25" height="570"/>
+  </g>
+  <text x="792.5" y="897" text-anchor="middle">TCMP1[31:0]</text>
+  <line class="w" x1="805" y1="1190" x2="920" y2="1190"/>
+  <text x="920" y="1186" text-anchor="end">tcmp1[31:0]</text>
+</svg>

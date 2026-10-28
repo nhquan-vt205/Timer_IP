@@ -7,7 +7,7 @@
 ../rtl/apb_slave.v
 
 // --- register ---
-// ../rtl/register.v
+../rtl/register.v
 
 // --- cnt_ctrl ---
 // ../rtl/cnt_ctrl.v
