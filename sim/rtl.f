@@ -4,7 +4,7 @@
 // ../rtl/my_module.v
 
 // --- apb_slave ---
-// ../rtl/apb_slave.v
+../rtl/apb_slave.v
 
 // --- register ---
 // ../rtl/register.v
