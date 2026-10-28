@@ -19,4 +19,4 @@
 ../rtl/interrupt.v
 
 // --- main ---
-// ../rtl/timer_top.v
+../rtl/timer_top.v
