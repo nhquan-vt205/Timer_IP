@@ -13,7 +13,7 @@
 // ../rtl/cnt_ctrl.v
 
 // --- counter ---
-// ../rtl/counter.v
+../rtl/counter.v
 
 // --- interrupt ---
 // ../rtl/interrupt.v
