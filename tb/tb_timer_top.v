@@ -22,6 +22,10 @@ module tb_timer_top;
   parameter CLK_PERIOD   = 20;
   parameter RESET_CYCLES = 2;
   parameter TIMEOUT_NS   = 200000;
+  // Log columns: time digits, case-name width, value digits (64-bit %h)
+  parameter TIME_W       = 8;
+  parameter NAME_W       = 40;
+  parameter VAL_W        = 16;
 
   // Register offsets
   parameter ADDR_TCR   = 12'h000;
@@ -87,6 +91,8 @@ module tb_timer_top;
   integer        i;
   reg  [8*64-1:0] tag;
   reg  [8*64-1:0] cyc_name;
+  reg  [8*64-1:0] exp_s;
+  reg  [8*64-1:0] act_s;
 
   // tim_int sampled in every cycle, indexed by cycle (checked later against
   // the per-cycle vplan values)
@@ -298,6 +304,22 @@ module tb_timer_top;
   // ============================================================
   // 6. Checker
   // ============================================================
+  // One aligned log line: [time] case PASS|FAIL | expected: exp | actual: act
+  task log_case;
+    input [8*64-1:0] name;
+    input            pass;
+    input [8*64-1:0] exp_str;
+    input [8*64-1:0] act_str;
+    reg   [8*64-1:0] t_str;
+    begin
+      $sformat(t_str, "%0d", $time);
+      $display("[%0s] %0s %0s | expected: %0s | actual: %0s",
+               pad_left(t_str, TIME_W), pad_right(name, NAME_W),
+               pass ? "PASS" : "FAIL",
+               pad_left(exp_str, VAL_W), pad_left(act_str, VAL_W));
+    end
+  endtask
+
   task check_val;
     input [8*64-1:0] name;
     input [63:0]     exp;
@@ -305,12 +327,13 @@ module tb_timer_top;
     begin
       if (act === exp) begin
         pass_count = pass_count + 1;
-        $display("[%0d] %0s PASS | expected: %h | actual: %h", $time, name, exp, act);
       end
       else begin
         fail_count = fail_count + 1;
-        $display("[%0d] %0s FAIL | expected: %h | actual: %h", $time, name, exp, act);
       end
+      $sformat(exp_s, "%h", exp);
+      $sformat(act_s, "%h", act);
+      log_case(name, (act === exp), exp_s, act_s);
     end
   endtask
 
@@ -332,6 +355,46 @@ module tb_timer_top;
   // ============================================================
   // 7. Helper Functions
   // ============================================================
+  // Number of characters of a string held in reg [8*64-1:0]
+  function integer str_len;
+    input [8*64-1:0] s;
+    integer          k;
+    begin
+      str_len = 0;
+      for (k = 0; k < 64; k = k + 1) begin
+        if (s[8*k +: 8] != 8'h0) begin
+          str_len = k + 1;
+        end
+      end
+    end
+  endfunction
+
+  // s right-aligned in a field of w characters (leading spaces)
+  function [8*64-1:0] pad_left;
+    input [8*64-1:0] s;
+    input integer    w;
+    integer          k;
+    begin
+      pad_left = s;
+      for (k = str_len(s); k < w; k = k + 1) begin
+        pad_left[8*k +: 8] = " ";
+      end
+    end
+  endfunction
+
+  // s left-aligned in a field of w characters (trailing spaces)
+  function [8*64-1:0] pad_right;
+    input [8*64-1:0] s;
+    input integer    w;
+    integer          k;
+    begin
+      pad_right = s;
+      for (k = str_len(s); k < w; k = k + 1) begin
+        pad_right = {pad_right[8*63-1:0], 8'h20};
+      end
+    end
+  endfunction
+
   // Read mux of the register map (reserved addresses read 0)
   function [31:0] read_word;
     input [11:0] addr;
