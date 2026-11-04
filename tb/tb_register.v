@@ -218,8 +218,9 @@ module tb_register;
                     (ref_tim_en & pstrb[1] & (pwdata[11:8] != ref_div_val)) |
                     (ref_tim_en & pstrb[0] & (pwdata[1] != ref_div_en)));
 
-      exp_tdr0_wr_en = (wr_en && paddr[11:2] == 10'h001) ? pstrb : 4'h0;
-      exp_tdr1_wr_en = (wr_en && paddr[11:2] == 10'h002) ? pstrb : 4'h0;
+      // TDR byte enables only while TIM_EN = 0 (register map, OPEN-002)
+      exp_tdr0_wr_en = (wr_en && !ref_tim_en && paddr[11:2] == 10'h001) ? pstrb : 4'h0;
+      exp_tdr1_wr_en = (wr_en && !ref_tim_en && paddr[11:2] == 10'h002) ? pstrb : 4'h0;
       exp_int_st_clr = wr_en & (paddr[11:2] == 10'h006) & pstrb[0] & pwdata[0];
 
       if (rd_en) begin
