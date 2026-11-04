@@ -7,6 +7,7 @@
 // Spec     : doc/spec/architecture/apb_slave_spec.md
 // Diagram  : doc/diagram/apb_slave/apb_slave.svg (L2)
 // Revision : 1.0 - initial version
+//            1.1 - pready_d/pslverr_d as if-blocks (X-robust idle bus)
 // ============================================================================
 `default_nettype none
 
@@ -35,16 +36,25 @@ module apb_slave (
   // Combinational signals
   // --------------------------------------------------------------------------
   wire apb_acc;    // APB access phase
-  wire pready_d;
-  wire pslverr_d;
+  reg  pready_d;
+  reg  pslverr_d;
 
   assign apb_acc   = tim_psel & tim_penable;
 
-  // Wait state: set in the first access cycle, self-clears one cycle later
-  assign pready_d  = apb_acc & ~pready_q;
-
-  // Error: sample wr_err in the wait cycle of a write transfer
-  assign pslverr_d = apb_acc & ~pready_q & tim_pwrite & wr_err;
+  // Next values default to 0 and are set only by a known access condition,
+  // so an undriven (X) bus while idle cannot load X into pready_q/pslverr_q
+  always @(*) begin
+    pready_d  = 1'b0;
+    pslverr_d = 1'b0;
+    // Wait state: set in the first access cycle, self-clears one cycle later
+    if (apb_acc & ~pready_q) begin
+      pready_d = 1'b1;
+      // Error: sample wr_err in the wait cycle of a write transfer
+      if (tim_pwrite & wr_err) begin
+        pslverr_d = 1'b1;
+      end
+    end
+  end
 
   always @(posedge sys_clk or negedge sys_rst_n) begin
     if (!sys_rst_n) begin
