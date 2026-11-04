@@ -3,17 +3,17 @@
   <!-- module : register -->
   <!-- stage  : 2 - diagram L1 (TDR enables, TISR clear, TIER, THCSR) -->
   <!-- source : doc/spec/architecture/register_spec.md + doc/spec/register_file/register_map.md -->
-  <!-- scope  : from wr_en, sel_tdr0, sel_tdr1, sel_tisr, sel_tier, sel_thcsr, tim_pstrb, tim_pwdata to tdr0_wr_en, tdr1_wr_en, int_st_clr, int_en, halt_req -->
+  <!-- scope  : from wr_en, sel_tdr0, sel_tdr1, sel_tisr, sel_tier, sel_thcsr, tim_en, tim_pstrb, tim_pwdata to tdr0_wr_en, tdr1_wr_en, int_st_clr, int_en, halt_req -->
   <desc id="model"><![CDATA[
 // Scope view (gate-level detail of blk_ctrl in register.svg). S3 reads register.svg.
 // sys_clk rising edge, sys_rst_n asynchronous active-low (clock triangle / reset bubble).
 
 [gate_tdr0_we]
-tdr0_we = wr_en & sel_tdr0;
+tdr0_we = wr_en & sel_tdr0 & ~tim_en;   // no TDR write while TIM_EN = 1 (OPEN-002)
 [mux_tdr0]
 tdr0_wr_en = tdr0_we ? tim_pstrb : 4'h0;
 [gate_tdr1_we]
-tdr1_we = wr_en & sel_tdr1;
+tdr1_we = wr_en & sel_tdr1 & ~tim_en;
 [mux_tdr1]
 tdr1_wr_en = tdr1_we ? tim_pstrb : 4'h0;
 [gate_int_st_clr]
@@ -52,14 +52,17 @@ halt_req <= halt_req_d @(rst=1'b0);
   <line class="w" x1="510" y1="55" x2="780" y2="55"/>
   <text x="780" y="51" text-anchor="end">tdr0_wr_en[3:0]</text>
   <g id="gate_tdr0_we">
-    <path class="s" d="M330,100 H360 A25,25 0 0 1 360,150 H330 Z"/>
+    <path class="s" d="M330,100 H360 A30,30 0 0 1 360,160 H330 Z"/>
+    <circle class="s" cx="326" cy="150" r="4"/>
   </g>
-  <text x="162" y="119" text-anchor="end">wr_en</text>
-  <line class="w" x1="170" y1="115" x2="330" y2="115"/>
-  <text x="162" y="139" text-anchor="end">sel_tdr0</text>
-  <line class="w" x1="170" y1="135" x2="330" y2="135"/>
-  <path class="w" d="M385,125 H495 V82.5"/>
-  <text x="391" y="121">tdr0_we</text>
+  <text x="162" y="114" text-anchor="end">wr_en</text>
+  <line class="w" x1="170" y1="110" x2="330" y2="110"/>
+  <text x="162" y="134" text-anchor="end">sel_tdr0</text>
+  <line class="w" x1="170" y1="130" x2="330" y2="130"/>
+  <text x="162" y="154" text-anchor="end">tim_en</text>
+  <line class="w" x1="170" y1="150" x2="322" y2="150"/>
+  <path class="w" d="M390,130 H495 V82.5"/>
+  <text x="396" y="126">tdr0_we</text>
   <!-- ===== TDR1 byte write enables ===== -->
   <g id="mux_tdr1">
     <path class="s" d="M480,180 L510,195 L510,235 L480,250 Z"/>
@@ -73,14 +76,17 @@ halt_req <= halt_req_d @(rst=1'b0);
   <line class="w" x1="510" y1="215" x2="780" y2="215"/>
   <text x="780" y="211" text-anchor="end">tdr1_wr_en[3:0]</text>
   <g id="gate_tdr1_we">
-    <path class="s" d="M330,260 H360 A25,25 0 0 1 360,310 H330 Z"/>
+    <path class="s" d="M330,260 H360 A30,30 0 0 1 360,320 H330 Z"/>
+    <circle class="s" cx="326" cy="310" r="4"/>
   </g>
-  <text x="162" y="279" text-anchor="end">wr_en</text>
-  <line class="w" x1="170" y1="275" x2="330" y2="275"/>
-  <text x="162" y="299" text-anchor="end">sel_tdr1</text>
-  <line class="w" x1="170" y1="295" x2="330" y2="295"/>
-  <path class="w" d="M385,285 H495 V242.5"/>
-  <text x="391" y="281">tdr1_we</text>
+  <text x="162" y="274" text-anchor="end">wr_en</text>
+  <line class="w" x1="170" y1="270" x2="330" y2="270"/>
+  <text x="162" y="294" text-anchor="end">sel_tdr1</text>
+  <line class="w" x1="170" y1="290" x2="330" y2="290"/>
+  <text x="162" y="314" text-anchor="end">tim_en</text>
+  <line class="w" x1="170" y1="310" x2="322" y2="310"/>
+  <path class="w" d="M390,290 H495 V242.5"/>
+  <text x="396" y="286">tdr1_we</text>
   <!-- ===== TISR.INT_ST write-1-to-clear pulse ===== -->
   <g id="gate_int_st_clr">
     <path class="s" d="M330,330 H360 A45,45 0 0 1 360,420 H330 Z"/>

@@ -12,8 +12,8 @@ sel_tdr1 = (tim_paddr[11:2] == 10'h002);
 sel_tier = (tim_paddr[11:2] == 10'h005);
 sel_tisr = (tim_paddr[11:2] == 10'h006);
 sel_thcsr = (tim_paddr[11:2] == 10'h007);
-tdr0_wr_en = (wr_en & sel_tdr0) ? tim_pstrb : 4'h0;
-tdr1_wr_en = (wr_en & sel_tdr1) ? tim_pstrb : 4'h0;
+tdr0_wr_en = (wr_en & sel_tdr0 & ~tim_en) ? tim_pstrb : 4'h0;   // no TDR write while TIM_EN = 1 (OPEN-002)
+tdr1_wr_en = (wr_en & sel_tdr1 & ~tim_en) ? tim_pstrb : 4'h0;
 int_st_clr = wr_en & sel_tisr & tim_pstrb[0] & tim_pwdata[0];
 tier_we    = wr_en & sel_tier & tim_pstrb[0];
 int_en_d   = tier_we ? tim_pwdata[0] : int_en;
@@ -94,6 +94,9 @@ rdata = rd_en ? rdata_mux : 32'h0;
     <rect class="s" x="560" y="160" width="160" height="140"/>
     <text x="640" y="235" text-anchor="middle">ctrl_regs</text>
   </g>
+  <text x="640" y="292" text-anchor="middle">tim_en</text>
+  <circle class="dot" cx="820" cy="360" r="4"/>
+  <path class="w" d="M820,360 V310 H640 V300"/>
   <text x="556" y="176" text-anchor="end">tim_paddr[11:2]</text>
   <text x="556" y="196" text-anchor="end">wr_en</text>
   <text x="556" y="216" text-anchor="end">tim_pstrb[3:0]</text>
