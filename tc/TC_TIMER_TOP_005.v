@@ -1,37 +1,67 @@
 // ============================================================================
-// TC_TIMER_TOP_005 - Count divided mode
-// Objective: with DIV_EN = 1 the counter steps once every
-//            2^DIV_VAL cycles (DIV_VAL = 0, 2, 8).
+// TC_TIMER_TOP_005 - reg_byte_access
+// Objective: byte strobes write only the strobed bytes; strobe 0 writes
+//            nothing
+//   TCMP0, TDR0, TCR, TIER and THCSR (two levels)
 // Copied to sim/run_test.v and included inside tb_timer_top.
 // ============================================================================
   initial begin
     init_test;
-    reset_dut;
-    $display("-- Count divided mode test --");
-    // Part A: DIV_VAL = 0
-    apb_wr(ADDR_TCR, 32'h0000_0002, 4'b0011);
-    apb_wr(ADDR_TCR, 32'h0000_0003, 4'b0011);
-    mark_e0;
-    apb_rd(ADDR_TDR0, 32'h2);                              // e0+2
-    apb_rd(ADDR_TDR0, 32'h5);                              // e0+5
-    apb_rd(ADDR_TDR0, 32'h8);                              // e0+8
-    // Part B: DIV_VAL = 2, /4
-    apb_wr(ADDR_TCR, 32'h0000_0002, 4'b0001);              // TIM_EN = 0, clears cnt
-    apb_wr(ADDR_TCR, 32'h0000_0202, 4'b0011);
-    apb_wr(ADDR_TCR, 32'h0000_0203, 4'b0011);
-    mark_e0;
-    apb_rd(ADDR_TDR0, 32'h0);                              // e0+2
-    apb_rd(ADDR_TDR0, 32'h1);                              // e0+5
-    apb_rd(ADDR_TDR0, 32'h2);                              // e0+8
-    apb_rd(ADDR_TDR0, 32'h2);                              // e0+11
-    apb_rd(ADDR_TDR0, 32'h3);                              // e0+14
-    // Part C: DIV_VAL = 8, /256
-    apb_wr(ADDR_TCR, 32'h0000_0202, 4'b0001);
-    apb_wr(ADDR_TCR, 32'h0000_0802, 4'b0011);
-    apb_wr(ADDR_TCR, 32'h0000_0803, 4'b0011);
-    mark_e0;
-    idle_n(253);
-    apb_rd(ADDR_TDR0, 32'h0);                              // e0+255
-    apb_rd(ADDR_TDR0, 32'h1);                              // e0+258
+    u_log.item("reg_byte_access");
+    begin : tcmp0
+      u_log.sub1("TCMP0");
+      reset_dut;
+      apb_wr(ADDR_TCMP0, 32'h1122_3344, 4'b0001);
+      apb_rd(ADDR_TCMP0, 32'hFFFF_FF44);
+      apb_wr(ADDR_TCMP0, 32'h1122_3344, 4'b0010);
+      apb_rd(ADDR_TCMP0, 32'hFFFF_3344);
+      apb_wr(ADDR_TCMP0, 32'h1122_3344, 4'b0100);
+      apb_rd(ADDR_TCMP0, 32'hFF22_3344);
+      apb_wr(ADDR_TCMP0, 32'h1122_3344, 4'b1000);
+      apb_rd(ADDR_TCMP0, 32'h1122_3344);
+      apb_wr(ADDR_TCMP0, 32'hAABB_CCDD, 4'b0101);
+      apb_rd(ADDR_TCMP0, 32'h11BB_33DD);
+      apb_wr(ADDR_TCMP0, 32'h0, 4'b0000);
+      apb_rd(ADDR_TCMP0, 32'h11BB_33DD);
+    end
+    begin : tdr0
+      u_log.sub1("TDR0");
+      reset_dut;                                           // TIM_EN = 0
+      apb_wr(ADDR_TDR0, 32'h1122_3344, 4'b0001);
+      apb_rd(ADDR_TDR0, 32'h0000_0044);
+      apb_wr(ADDR_TDR0, 32'h1122_3344, 4'b0010);
+      apb_rd(ADDR_TDR0, 32'h0000_3344);
+      apb_wr(ADDR_TDR0, 32'h1122_3344, 4'b0100);
+      apb_rd(ADDR_TDR0, 32'h0022_3344);
+      apb_wr(ADDR_TDR0, 32'h1122_3344, 4'b1000);
+      apb_rd(ADDR_TDR0, 32'h1122_3344);
+      apb_wr(ADDR_TDR0, 32'hAABB_CCDD, 4'b1010);
+      apb_rd(ADDR_TDR0, 32'hAA22_CC44);
+      apb_wr(ADDR_TDR0, 32'h0, 4'b0000);
+      apb_rd(ADDR_TDR0, 32'hAA22_CC44);
+      apb_rd(ADDR_TDR1, 32'h0);
+    end
+    begin : tcr
+      u_log.sub1("TCR");
+      reset_dut;
+      apb_wr(ADDR_TCR, 32'h0000_0302, 4'b0010);
+      apb_rd(ADDR_TCR, 32'h0000_0300);
+      apb_wr(ADDR_TCR, 32'h0000_0802, 4'b0001);
+      apb_rd(ADDR_TCR, 32'h0000_0302);
+      apb_wr(ADDR_TCR, 32'hFFFF_FFFF, 4'b1100);
+      apb_rd(ADDR_TCR, 32'h0000_0302);
+    end
+    begin : tier_and_thcsr
+      u_log.sub1("TIER and THCSR");
+      reset_dut;
+      apb_wr(ADDR_TIER, 32'hFFFF_FFFF, 4'b1110);
+      apb_rd(ADDR_TIER, 32'h0);
+      apb_wr(ADDR_TIER, 32'h1, 4'b0001);
+      apb_rd(ADDR_TIER, 32'h1);
+      apb_wr(ADDR_THCSR, 32'hFFFF_FFFF, 4'b1110);
+      apb_rd(ADDR_THCSR, 32'h0);
+      apb_wr(ADDR_THCSR, 32'h1, 4'b0001);
+      apb_rd(ADDR_THCSR, 32'h1);
+    end
     end_test;
   end

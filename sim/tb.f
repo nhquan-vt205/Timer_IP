@@ -6,4 +6,12 @@
 // --- my_module ---
 // ../tb/tb_my_module_drv.v
 
+// --- main ---
+../tb/tb_timer_top_clk_rst.v
+../tb/tb_timer_top_drv.v
+../tb/tb_timer_top_mon.v
+../tb/tb_timer_top_model.v
+../tb/tb_timer_top_chk.v
+../tb/tb_timer_top_log.v
+
 ../tb/${TB_NAME}.v

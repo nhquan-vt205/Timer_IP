@@ -1,31 +1,24 @@
 // ============================================================================
-// TC_TIMER_TOP_009 - Interrupt generation
-// Objective: compare match sets INT_ST and tim_int; INT_EN masks
-//            tim_int without losing INT_ST; writing 1 to TISR clears it.
+// TC_TIMER_TOP_009 - apb_unaligned_chk
+// Objective: decoding uses tim_paddr[11:2] only; tim_paddr[1:0] is ignored
+//            for registers, reserved addresses and the TCR error (one level)
 // Copied to sim/run_test.v and included inside tb_timer_top.
 // ============================================================================
   initial begin
     init_test;
+    u_log.item("apb_unaligned_chk");
     reset_dut;
-    $display("-- Interrupt generation test --");
-    apb_wr(ADDR_TCMP0, 32'h0000_0010, 4'hF);               // 1
-    apb_wr(ADDR_TCMP1, 32'h0,         4'hF);
-    apb_wr(ADDR_TIER,  32'h1,         4'hF);
-    apb_wr(ADDR_TCR,   32'h0000_0001, 4'b0001);            // 2: e0 follows
-    mark_e0;
-    idle_n(20);                                            // 3: e0 .. e0+19
-    apb_rd(ADDR_TISR,  32'h1);                             // 4: e0+22
-    apb_rd(ADDR_TDR0,  32'h0000_0019);                     // e0+25
-    apb_wr(ADDR_TIER,  32'h0, 4'hF);                       // 5: e0+28
-    apb_rd(ADDR_TISR,  32'h1);                             // e0+31
-    apb_wr(ADDR_TIER,  32'h1, 4'hF);                       // 6: e0+34
-    apb_wr(ADDR_TISR,  32'h0, 4'b0001);                    // 7: e0+37
-    apb_rd(ADDR_TISR,  32'h1);                             // e0+40
-    apb_wr(ADDR_TISR,  32'h1, 4'b0001);                    // 8: e0+43
-    apb_rd(ADDR_TISR,  32'h0);                             // e0+46
-    // tim_int in every cycle e0 .. e0+46
-    for (i = 0; i <= 46; i = i + 1) begin
-      check_int_at(i, ((i >= 17) && (i <= 28)) || ((i >= 35) && (i <= 43)));
-    end
+    apb_wr(12'h00D, 32'h1234_5678, 4'hF);                  // 1: TCMP0
+    apb_rd(12'h00C, 32'h1234_5678);
+    apb_rd(12'h00F, 32'h1234_5678);
+    apb_wr(12'h016, 32'h1, 4'hF);                          // 2: TIER
+    apb_rd(12'h015, 32'h1);
+    apb_wr(12'h005, 32'h0000_0010, 4'hF);                  // 3: TDR0
+    apb_rd(12'h007, 32'h0000_0010);
+    apb_rd(12'h009, 32'h0);
+    apb_wr(12'h021, 32'hFFFF_FFFF, 4'hF);                  // 4: reserved
+    apb_rd(12'h023, 32'h0);
+    apb_write(12'h002, 32'h0000_0901, 4'b0011, 1'b1);      // 5: TCR, DIV_VAL = 9
+    apb_rd(12'h001, 32'h0000_0100);                        // 6
     end_test;
   end

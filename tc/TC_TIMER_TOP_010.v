@@ -1,28 +1,41 @@
 // ============================================================================
-// TC_TIMER_TOP_010 - Interrupt while matched
-// Objective: the compare is continuous: INT_ST is set again right
-//            after a clear while cnt still equals {TCMP1, TCMP0}.
+// TC_TIMER_TOP_010 - cnt_counting_chk
+// Objective: count every cycle; software load while stopped, carry TDR0 ->
+//            TDR1, write while counting ignored
+//   Default mode, TDR load and carry (two levels)
 // Copied to sim/run_test.v and included inside tb_timer_top.
 // ============================================================================
   initial begin
     init_test;
-    reset_dut;
-    $display("-- Interrupt while matched test --");
-    // TIM_EN stays 0, cnt stays 0
-    apb_wr(ADDR_TIER,  32'h1, 4'hF);                       // 1
-    apb_wr(ADDR_TCMP0, 32'h0, 4'hF);
-    apb_wr(ADDR_TCMP1, 32'h0, 4'hF);                       // last access c1
-    mark_now;
-    apb_rd(ADDR_TISR,  32'h1);                             // 2: c1+3
-    apb_wr(ADDR_TISR,  32'h1, 4'b0001);                    // 3: c2 = c1+6
-    apb_rd(ADDR_TISR,  32'h1);                             // c1+9
-    apb_wr(ADDR_TCMP0, 32'h0000_0010, 4'hF);               // 4
-    apb_rd(ADDR_TISR,  32'h1);                             // c1+15
-    apb_wr(ADDR_TISR,  32'h1, 4'b0001);                    // 5: c3 = c1+18
-    apb_rd(ADDR_TISR,  32'h0);                             // c1+21
-    // tim_int in every cycle c1 .. c1+21
-    for (i = 0; i <= 21; i = i + 1) begin
-      check_int_at(i, ((i >= 2) && (i <= 6)) || ((i >= 8) && (i <= 18)));
+    u_log.item("cnt_counting_chk");
+    begin : default_mode
+      u_log.sub1("Default mode");
+      reset_dut;
+      apb_rd(ADDR_TDR0, 32'h0);                            // 1
+      apb_wr(ADDR_TCR, 32'h0000_0001, 4'b0001);            // 2: e0 follows
+      apb_rd(ADDR_TDR0, 32'h2);                            // 3: e0+2
+      apb_rd(ADDR_TDR0, 32'h5);                            // e0+5
+      apb_rd(ADDR_TDR0, 32'h8);                            // e0+8
+      apb_rd(ADDR_TDR1, 32'h0);                            // e0+11
+      apb_rd(ADDR_TCR,  32'h0000_0101);                    // e0+14
+    end
+    begin : tdr_load_and_carry
+      u_log.sub1("TDR load and carry");
+      reset_dut;
+      apb_wr(ADDR_TDR0, 32'hFFFF_FFF0, 4'hF);              // 1
+      apb_wr(ADDR_TDR1, 32'h0000_0001, 4'hF);
+      apb_rd(ADDR_TDR0, 32'hFFFF_FFF0);
+      apb_rd(ADDR_TDR1, 32'h0000_0001);
+      apb_wr(ADDR_TDR0, 32'h0000_00AB, 4'b0001);           // 2
+      apb_rd(ADDR_TDR0, 32'hFFFF_FFAB);
+      apb_wr(ADDR_TDR0, 32'hFFFF_FFFE, 4'hF);              // 3
+      apb_wr(ADDR_TDR1, 32'h0,         4'hF);
+      apb_wr(ADDR_TCR,  32'h0000_0001, 4'b0001);           // 4: e0 follows
+      apb_rd(ADDR_TDR0, 32'h0000_0000);                    // e0+2: carry
+      apb_rd(ADDR_TDR1, 32'h0000_0001);                    // e0+5
+      apb_wr(ADDR_TDR0, 32'h0000_1000, 4'hF);              // 5: e0+8, ignored
+      apb_rd(ADDR_TDR0, 32'h0000_0009);                    // e0+11
+      apb_rd(ADDR_TDR1, 32'h0000_0001);                    // e0+14
     end
     end_test;
   end
