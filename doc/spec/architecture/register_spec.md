@@ -3,9 +3,9 @@ Type: leaf · Parent: timer_top · Level: L1
 
 ## Function / Chức năng
 
-Register file of the Timer IP. Decodes `tim_paddr[11:2]`, holds TCR (TIM_EN, DIV_EN, DIV_VAL), TCMP0, TCMP1, TIER.INT_EN and THCSR.HALT_REQ with byte-strobe writes, detects forbidden TCR writes (`wr_err`), produces byte write enables for TDR0/TDR1 (stored in `counter`) and the `int_st_clr` pulse for TISR (stored in `interrupt`), and drives the read mux `rdata` (0 when `rd_en` = 0). Field definitions and reset values: `doc/spec/register_file/register_map.md`.
+Register file of the Timer IP. Decodes `tim_paddr[11:2]`, holds TCR (TIM_EN, DIV_EN, DIV_VAL), TCMP0, TCMP1, TIER.INT_EN and THCSR.HALT_REQ with byte-strobe writes, detects forbidden TCR writes (`wr_err`), produces byte write enables for TDR0/TDR1 (stored in `counter`; blocked while TIM_EN = 1) and the `int_st_clr` pulse for TISR (stored in `interrupt`), and drives the read mux `rdata` (0 when `rd_en` = 0). Field definitions and reset values: `doc/spec/register_file/register_map.md`.
 
-_VI:_ Khối thanh ghi của Timer IP. Giải mã `tim_paddr[11:2]`, chứa TCR (TIM_EN, DIV_EN, DIV_VAL), TCMP0, TCMP1, TIER.INT_EN và THCSR.HALT_REQ với ghi theo byte strobe, phát hiện ghi TCR bị cấm (`wr_err`), tạo tín hiệu cho phép ghi theo byte cho TDR0/TDR1 (lưu trong `counter`) và xung `int_st_clr` cho TISR (lưu trong `interrupt`), và tạo mux đọc `rdata` (bằng 0 khi `rd_en` = 0). Định nghĩa field và giá trị reset: `doc/spec/register_file/register_map.md`.
+_VI:_ Khối thanh ghi của Timer IP. Giải mã `tim_paddr[11:2]`, chứa TCR (TIM_EN, DIV_EN, DIV_VAL), TCMP0, TCMP1, TIER.INT_EN và THCSR.HALT_REQ với ghi theo byte strobe, phát hiện ghi TCR bị cấm (`wr_err`), tạo tín hiệu cho phép ghi theo byte cho TDR0/TDR1 (lưu trong `counter`; bị chặn khi TIM_EN = 1) và xung `int_st_clr` cho TISR (lưu trong `interrupt`), và tạo mux đọc `rdata` (bằng 0 khi `rd_en` = 0). Định nghĩa field và giá trị reset: `doc/spec/register_file/register_map.md`.
 
 ## Interface
 
@@ -67,8 +67,9 @@ _VI:_ Logic tổ hợp:
 | `tcmp0_we` / `tcmp1_we` | 1 | `wr_en & sel_tcmp0` / `wr_en & sel_tcmp1` |
 | `tier_we` | 1 | `wr_en & sel_tier & tim_pstrb[0]` |
 | `thcsr_we` | 1 | `wr_en & sel_thcsr & tim_pstrb[0]` |
-| `tdr0_wr_en` | 4 | `(wr_en & sel_tdr0) ? tim_pstrb : 4'h0` |
-| `tdr1_wr_en` | 4 | `(wr_en & sel_tdr1) ? tim_pstrb : 4'h0` |
+| `tdr0_we` / `tdr1_we` | 1 | `wr_en & sel_tdr0 & ~tim_en` / `wr_en & sel_tdr1 & ~tim_en` |
+| `tdr0_wr_en` | 4 | `tdr0_we ? tim_pstrb : 4'h0` |
+| `tdr1_wr_en` | 4 | `tdr1_we ? tim_pstrb : 4'h0` |
 | `int_st_clr` | 1 | `wr_en & sel_tisr & tim_pstrb[0] & tim_pwdata[0]` |
 | `rdata_mux` | 32 | case `tim_paddr[11:2]`: `10'h000` → `{20'h0, div_val, 6'h0, div_en, tim_en}`; `10'h001` → `cnt[31:0]`; `10'h002` → `cnt[63:32]`; `10'h003` → `tcmp0`; `10'h004` → `tcmp1`; `10'h005` → `{31'h0, int_en}`; `10'h006` → `{31'h0, int_st}`; `10'h007` → `{30'h0, halt_ack, halt_req}`; default → `32'h0` |
 | `rdata` | 32 | `rd_en ? rdata_mux : 32'h0` |
@@ -83,8 +84,8 @@ _VI:_ Cấu trúc mux giữ giá trị lặp theo byte của TCMP0/TCMP1 là ph�
   - _VI:_ Ghi chỉ cập nhật các byte được strobe của thanh ghi được chọn, ở sườn clock có `wr_en` = 1. Bit reserved và field RO không được lưu; ghi vào địa chỉ reserved bị bỏ qua (không có `sel_*`).
 - `wr_err` is purely combinational; `apb_slave` samples it in the wait cycle of a write and then withholds `wr_en`, so a rejected TCR write changes nothing.
   - _VI:_ `wr_err` thuần tổ hợp; `apb_slave` lấy mẫu trong chu kỳ chờ của giao dịch ghi rồi không tạo `wr_en`, nên ghi TCR bị từ chối không thay đổi gì.
-- TDR0/TDR1 writes are forwarded as `tdr0_wr_en`/`tdr1_wr_en` byte enables; a TISR write with byte 0 strobed and bit 0 = 1 produces the `int_st_clr` pulse; writing 0 has no effect (RW1C).
-  - _VI:_ Ghi TDR0/TDR1 được chuyển thành byte enable `tdr0_wr_en`/`tdr1_wr_en`; ghi TISR có byte 0 được strobe và bit 0 = 1 tạo xung `int_st_clr`; ghi 0 không tác dụng (RW1C).
+- TDR0/TDR1 writes are forwarded as `tdr0_wr_en`/`tdr1_wr_en` byte enables only while TIM_EN = 0 (stored value). While TIM_EN = 1 the counter cannot be overwritten: the write is ignored, TDR0/TDR1 keep counting, and the transfer completes without error (`tim_pslverr` = 0, OPEN-002). A TISR write with byte 0 strobed and bit 0 = 1 produces the `int_st_clr` pulse; writing 0 has no effect (RW1C).
+  - _VI:_ Ghi TDR0/TDR1 chỉ được chuyển thành byte enable `tdr0_wr_en`/`tdr1_wr_en` khi TIM_EN = 0 (giá trị đang lưu). Khi TIM_EN = 1 không thể ghi đè bộ đếm: lệnh ghi bị bỏ qua, TDR0/TDR1 vẫn đếm tiếp, và giao dịch kết thúc không lỗi (`tim_pslverr` = 0, OPEN-002). Ghi TISR có byte 0 được strobe và bit 0 = 1 tạo xung `int_st_clr`; ghi 0 không tác dụng (RW1C).
 - Reads: `rdata` = selected word during `rd_en`, otherwise 0; reserved addresses read 0.
   - _VI:_ Đọc: `rdata` = word được chọn khi `rd_en`, ngoài ra bằng 0; địa chỉ reserved đọc ra 0.
 

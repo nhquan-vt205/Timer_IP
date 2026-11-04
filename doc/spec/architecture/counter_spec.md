@@ -3,9 +3,9 @@ Type: leaf · Parent: timer_top · Level: L2
 
 ## Function / Chức năng
 
-64-bit up counter `cnt` = {TDR1, TDR0}. Increments by 1 when `cnt_en` = 1 and wraps from 2^64 − 1 to 0; can be written by software per byte through TDR0/TDR1 (write has priority over counting); is cleared to 0 by `cnt_clr` (highest priority). `cnt` is unsigned.
+64-bit up counter `cnt` = {TDR1, TDR0}. Increments by 1 when `cnt_en` = 1 and wraps from 2^64 − 1 to 0; can be written by software per byte through TDR0/TDR1 while the timer is stopped (`register` blocks the write enables while TIM_EN = 1); is cleared to 0 by `cnt_clr` (highest priority). `cnt` is unsigned.
 
-_VI:_ Bộ đếm lên 64-bit `cnt` = {TDR1, TDR0}. Tăng 1 khi `cnt_en` = 1 và quay vòng từ 2^64 − 1 về 0; phần mềm ghi được theo byte qua TDR0/TDR1 (ghi ưu tiên hơn đếm); bị xóa về 0 bởi `cnt_clr` (ưu tiên cao nhất). `cnt` là số không dấu.
+_VI:_ Bộ đếm lên 64-bit `cnt` = {TDR1, TDR0}. Tăng 1 khi `cnt_en` = 1 và quay vòng từ 2^64 − 1 về 0; phần mềm ghi được theo byte qua TDR0/TDR1 khi timer đang dừng (`register` chặn tín hiệu cho phép ghi khi TIM_EN = 1); bị xóa về 0 bởi `cnt_clr` (ưu tiên cao nhất). `cnt` là số không dấu.
 
 ## Interface
 
@@ -36,8 +36,8 @@ _VI:_ Thứ tự ưu tiên mux giá trị kế tiếp (gần FF nhất = cao nh�
 
 ## Behavior / Hành vi
 
-- A software write replaces only the enabled bytes; the other bytes keep the current `cnt` value (not `cnt + 1`), so writing TDR0 never alters TDR1 and vice versa. A count step coinciding with a write is lost (write wins).
-  - _VI:_ Ghi phần mềm chỉ thay các byte được cho phép; các byte còn lại giữ giá trị `cnt` hiện tại (không phải `cnt + 1`), nên ghi TDR0 không bao giờ làm đổi TDR1 và ngược lại. Bước đếm trùng chu kỳ với ghi bị bỏ (ghi thắng).
+- A software write replaces only the enabled bytes; the other bytes keep the current `cnt` value (not `cnt + 1`), so writing TDR0 never alters TDR1 and vice versa. Write enables only arrive while TIM_EN = 0, when `cnt_en` = 0, so a write never coincides with a count step; the mux priority `cnt_wr` > `cnt_en` is kept unchanged. A write in the cycle where `cnt_clr` = 1 (first cycle with TIM_EN = 0) is overridden by the clear.
+  - _VI:_ Ghi phần mềm chỉ thay các byte được cho phép; các byte còn lại giữ giá trị `cnt` hiện tại (không phải `cnt + 1`), nên ghi TDR0 không bao giờ làm đổi TDR1 và ngược lại. Tín hiệu cho phép ghi chỉ đến khi TIM_EN = 0, lúc đó `cnt_en` = 0, nên ghi không bao giờ trùng với bước đếm; thứ tự ưu tiên mux `cnt_wr` > `cnt_en` giữ nguyên. Lệnh ghi rơi vào chu kỳ có `cnt_clr` = 1 (chu kỳ đầu tiên có TIM_EN = 0) bị lệnh xóa ghi đè.
 - The counter keeps counting while an interrupt is pending; overflow wraps to 0 and continues.
   - _VI:_ Bộ đếm vẫn đếm khi đang có ngắt chờ; tràn thì quay về 0 và đếm tiếp.
 

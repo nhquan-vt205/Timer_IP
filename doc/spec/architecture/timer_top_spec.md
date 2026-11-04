@@ -62,9 +62,9 @@ _VI:_ Xem Tổng quan dự án. Bảng thanh ghi: `doc/spec/register_file/regist
 | Instance | Module | Role |
 | --- | --- | --- |
 | `u_apb_slave` | `apb_slave` | APB transfer: wait state, error response, `wr_en`/`rd_en`, `tim_prdata` = `rdata` |
-| `u_register` | `register` | Address decode, TCR/TCMP0/TCMP1/TIER/THCSR, byte write, `wr_err`, TDR write enables, `int_st_clr`, read mux |
+| `u_register` | `register` | Address decode, TCR/TCMP0/TCMP1/TIER/THCSR, byte write, `wr_err`, TDR write enables (only while TIM_EN = 0), `int_st_clr`, read mux |
 | `u_cnt_ctrl` | `cnt_ctrl` | `cnt_en` from TIM_EN/DIV_EN/DIV_VAL, halt, `cnt_clr` on TIM_EN H→L |
-| `u_counter` | `counter` | 64-bit counter {TDR1, TDR0}: count, software byte write, clear |
+| `u_counter` | `counter` | 64-bit counter {TDR1, TDR0}: count, software byte write (timer stopped), clear |
 | `u_interrupt` | `interrupt` | Compare `cnt` with {TCMP1, TCMP0}, INT_ST, `tim_int` |
 
 No glue logic: the top only instantiates and connects. Internal nets (width): `wr_en` 1, `rd_en` 1, `wr_err` 1, `rdata` 32, `tim_en` 1, `div_en` 1, `div_val` 4, `halt_req` 1, `halt_ack` 1, `tdr0_wr_en` 4, `tdr1_wr_en` 4, `tcmp0` 32, `tcmp1` 32, `int_en` 1, `int_st_clr` 1, `int_st` 1, `cnt_en` 1, `cnt_clr` 1, `cnt` 64.

@@ -1,7 +1,7 @@
 # Spec status
 
 STATUS: PASS
-Input: doc/spec/source/Timer_Design_Specification_Advanced_VI_preview.pdf
+Input: doc/spec/source/Timer_Design_Specification_Advanced_VI_preview.pdf, doc/spec/source/Final_Project_only.pdf (instructor requirement), doc/spec/source/spec_change_notes.md
 
 ## Module list
 | Module | Parent | Type | Level | Function | Branch |
@@ -17,3 +17,4 @@ Input: doc/spec/source/Timer_Design_Specification_Advanced_VI_preview.pdf
 | ID | Description | Interim assumption | Impact |
 | --- | --- | --- | --- |
 | OPEN-001 | Input does not state whether `dbg_mode` is synchronous to `sys_clk` | `dbg_mode` is synchronous to `sys_clk`; no synchronizer is added. The input constraint "`dbg_mode` does not change while TIM_EN = 1" is an environment assumption, not checked by hardware | `cnt_ctrl` only (adding a 2-FF synchronizer would be a local change) |
+| OPEN-002 | TDR0/TDR1 cannot be overwritten while TIM_EN = 1 (instructor's golden model; not stated in `Final_Project_only.pdf`, which lists only the two TCR error conditions). Input does not state the bus response | The write is ignored and the transfer completes without error (`tim_pslverr` = 0); the condition is the stored TIM_EN (also while halted). To confirm with the instructor's log | `register` (`tdr0_we`/`tdr1_we`); an error response instead would also change `wr_err` |

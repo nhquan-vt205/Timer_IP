@@ -27,8 +27,8 @@ _VI:_ Bus APB, địa chỉ 12-bit, dữ liệu 32-bit, byte strobe `tim_pstrb[3
 | 0x00 | TCR | 7:2 | Reserved | RO | 0 | Reads 0 |
 | 0x00 | TCR | 1 | DIV_EN | RW | 0 | 0: count every `sys_clk` cycle; 1: count every 2^DIV_VAL cycles. Change while TIM_EN = 1 → error response |
 | 0x00 | TCR | 0 | TIM_EN | RW | 0 | 0: counter stopped; 1: counter counts. H→L: hardware clears TDR0/TDR1 |
-| 0x04 | TDR0 | 31:0 | TDR0 | RW | 32'h0 | Counter bits [31:0]; cleared when TIM_EN H→L |
-| 0x08 | TDR1 | 31:0 | TDR1 | RW | 32'h0 | Counter bits [63:32]; cleared when TIM_EN H→L |
+| 0x04 | TDR0 | 31:0 | TDR0 | RW | 32'h0 | Counter bits [31:0]; writable only while TIM_EN = 0 (write ignored while TIM_EN = 1, no error, OPEN-002); cleared when TIM_EN H→L |
+| 0x08 | TDR1 | 31:0 | TDR1 | RW | 32'h0 | Counter bits [63:32]; writable only while TIM_EN = 0 (write ignored while TIM_EN = 1, no error, OPEN-002); cleared when TIM_EN H→L |
 | 0x0C | TCMP0 | 31:0 | TCMP0 | RW | 32'hFFFF_FFFF | Compare value bits [31:0] |
 | 0x10 | TCMP1 | 31:0 | TCMP1 | RW | 32'hFFFF_FFFF | Compare value bits [63:32] |
 | 0x14 | TIER | 31:1 | Reserved | RO | 0 | Reads 0 |
