@@ -3,12 +3,14 @@
 // Function : Register file of the Timer IP. Decodes tim_paddr[11:2], holds
 //            TCR (TIM_EN, DIV_EN, DIV_VAL), TCMP0, TCMP1, TIER.INT_EN and
 //            THCSR.HALT_REQ with byte-strobe writes, flags forbidden TCR
-//            writes (wr_err), forwards TDR0/TDR1 byte write enables and the
-//            TISR clear pulse, and drives the read mux rdata.
+//            writes (wr_err), forwards TDR0/TDR1 byte write enables (only
+//            while TIM_EN = 0) and the TISR clear pulse, and drives the read
+//            mux rdata.
 // Spec     : doc/spec/architecture/register_spec.md
 //            doc/spec/register_file/register_map.md
 // Diagram  : doc/diagram/register/register.svg (L1)
 // Revision : 1.0 - initial version
+//            1.1 - no TDR0/TDR1 write while TIM_EN = 1 (OPEN-002)
 // ============================================================================
 `default_nettype none
 
@@ -107,8 +109,10 @@ module register (
   assign tcmp1_bwe = {4{tcmp1_we}} & tim_pstrb;
   assign tier_we   = wr_en & sel_tier & tim_pstrb[0];
   assign thcsr_we  = wr_en & sel_thcsr & tim_pstrb[0];
-  assign tdr0_we   = wr_en & sel_tdr0;
-  assign tdr1_we   = wr_en & sel_tdr1;
+  // The counter cannot be overwritten while the timer runs (TIM_EN = 1):
+  // the write is ignored without an error response (OPEN-002)
+  assign tdr0_we   = wr_en & sel_tdr0 & ~tim_en;
+  assign tdr1_we   = wr_en & sel_tdr1 & ~tim_en;
 
   // TDR0/TDR1 are stored in counter; TISR.INT_ST is stored in interrupt
   assign tdr0_wr_en = tdr0_we ? tim_pstrb : 4'h0;
