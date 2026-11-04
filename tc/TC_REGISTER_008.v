@@ -1,7 +1,8 @@
 // ============================================================================
 // TC_REGISTER_008 - TDR write enable
 // Objective: TDR0/TDR1 writes are forwarded as byte write enables only in
-//            the cycle with wr_en = 1 at the TDR address.
+//            the cycle with wr_en = 1 at the TDR address, and only while
+//            TIM_EN = 0 (no TDR write while the timer runs, OPEN-002).
 // Copied to sim/run_test.v and included inside tb_register.
 // ============================================================================
   initial begin
@@ -19,6 +20,16 @@
     no_write(12'h004, 32'h0000_0000, 4'b1111);
     idle_cycle;
     reg_write(12'h00C, 32'h0000_0000, 4'b1111);
+    idle_cycle;
+    reg_write(12'h000, 32'h0000_0001, 4'b0001);            // 7: TIM_EN = 1
+    idle_cycle;
+    reg_write(12'h004, 32'h0000_0000, 4'b1111);            // 8: blocked
+    idle_cycle;
+    reg_write(12'h008, 32'h0000_0000, 4'b1111);            //    blocked
+    idle_cycle;
+    reg_write(12'h000, 32'h0000_0000, 4'b0001);            // 9: TIM_EN = 0
+    idle_cycle;
+    reg_write(12'h004, 32'h0000_0000, 4'b0001);
     idle_cycle;
     end_test;
   end
