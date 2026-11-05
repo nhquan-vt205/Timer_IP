@@ -1,0 +1,273 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1060" viewBox="0 0 1500 1060"
+     font-family="Calibri, Arial, sans-serif" font-size="13">
+  <!-- tb_timer_top - testbench structure (tb/tb_timer_top*.v, tc/TC_TIMER_TOP_*.v) -->
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#000"/>
+    </marker>
+  </defs>
+  <style>
+    .w{fill:none;stroke:#000;stroke-width:1.5}
+    .b{fill:none;stroke:#000;stroke-width:3.5}
+    .c{fill:none;stroke:#000;stroke-width:1.5;stroke-dasharray:7 4}
+    .blk{fill:#fff;stroke:#000;stroke-width:1.5}
+    .dut{fill:#eee;stroke:#000;stroke-width:2}
+    .sub{fill:#fff;stroke:#000;stroke-width:1}
+    .seq{fill:#f7f7f7;stroke:#000;stroke-width:1.5}
+    .dot{fill:#000}
+    .t{font-weight:bold;font-size:14px}
+    .s{font-size:11px}
+    .m{font-family:Consolas, "DejaVu Sans Mono", monospace;font-size:11px}
+    .tag{font-size:11px;fill:#666}
+    text{fill:#000;white-space:pre}
+  </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+
+  <text x="20" y="30" font-size="20" font-weight="bold">tb_timer_top - testbench structure</text>
+  <text x="20" y="50" font-size="12">Verilog-2005 | components listed in sim/tb.f (group main) | make -C sim all TESTNAME=TC_TIMER_TOP_&lt;NNN&gt;</text>
+
+  <!-- ===== testbench top ===== -->
+  <rect x="20" y="62" width="1460" height="883" fill="none" stroke="#000" stroke-width="2"/>
+  <text x="32" y="82" class="t">tb_timer_top  (tb/tb_timer_top.v)</text>
+
+  <!-- ===== u_clk_rst ===== -->
+  <rect class="blk" x="380" y="85" width="260" height="60"/>
+  <text x="390" y="103" class="t">u_clk_rst</text>
+  <text x="632" y="101" class="tag" text-anchor="end">sec 3</text>
+  <text x="390" y="119" class="s">tb_timer_top_clk_rst (CLK_PERIOD = 20)</text>
+  <text x="390" y="136" class="s">apply_reset / assert_reset / release_reset</text>
+
+  <!-- clk, rst_n distribution -->
+  <path class="w" d="M640,115 H1450 V610 H820 V640" marker-end="url(#arr)"/>
+  <text x="650" y="108">clk, rst_n</text>
+  <line class="w" x1="480" y1="145" x2="480" y2="200" marker-end="url(#arr)"/>
+  <text x="486" y="180">clk</text>
+  <circle class="dot" cx="880" cy="115" r="4"/>
+  <line class="w" x1="880" y1="115" x2="880" y2="200" marker-end="url(#arr)"/>
+  <text x="886" y="150">clk, rst_n</text>
+  <circle class="dot" cx="1300" cy="115" r="4"/>
+  <line class="w" x1="1300" y1="115" x2="1300" y2="200" marker-end="url(#arr)"/>
+  <text x="1306" y="150">clk, rst_n</text>
+  <circle class="dot" cx="1220" cy="610" r="4"/>
+  <line class="w" x1="1220" y1="610" x2="1220" y2="640" marker-end="url(#arr)"/>
+  <text x="1226" y="630">clk, rst_n</text>
+  <text x="826" y="630">clk</text>
+
+  <!-- ===== test case ===== -->
+  <rect class="seq" x="40" y="200" width="280" height="320"/>
+  <text x="50" y="220" class="t">Test case (sequence)</text>
+  <text x="312" y="216" class="tag" text-anchor="end">sec 9</text>
+  <text x="50" y="237">tc/TC_TIMER_TOP_001..013.v</text>
+  <text x="50" y="253" class="s">one file per VPLAN Item; make build copies</text>
+  <text x="50" y="267" class="s">it to sim/run_test.v, `include in sec 9</text>
+  <text x="50" y="292" class="m">initial begin</text>
+  <text x="50" y="308" class="m">  init_test;</text>
+  <text x="50" y="324" class="m">  u_log.item("&lt;Item&gt;");</text>
+  <text x="50" y="340" class="m">  begin : &lt;sub item&gt;</text>
+  <text x="50" y="356" class="m">    u_log.sub1 / sub2(...);</text>
+  <text x="50" y="372" class="m">    reset_dut;</text>
+  <text x="50" y="388" class="m">    apb_wr / apb_rd / apb_write</text>
+  <text x="50" y="404" class="m">    u_drv.idle(n), set_idle_x</text>
+  <text x="50" y="420" class="m">    u_clk_rst.assert_reset</text>
+  <text x="50" y="436" class="m">    u_chk.expect_* / mark_e0</text>
+  <text x="50" y="452" class="m">    u_chk.expect_int_at(n, v)</text>
+  <text x="50" y="468" class="m">  end</text>
+  <text x="50" y="484" class="m">  end_test;</text>
+  <text x="50" y="500" class="m">end</text>
+
+  <!-- ===== sequence tasks of the TB top ===== -->
+  <rect class="seq" x="40" y="640" width="280" height="250"/>
+  <text x="50" y="660" class="t">Sequence tasks</text>
+  <text x="312" y="656" class="tag" text-anchor="end">sec 4 / 8 / 9</text>
+  <text x="50" y="684" class="s">reset_dut: u_drv.drive_idle + apply_reset(2)</text>
+  <text x="50" y="704" class="s">apb_write(addr, wdata, strb, exp_err):</text>
+  <text x="50" y="718" class="s">    u_drv.apb_write + u_chk.expect_pslverr</text>
+  <text x="50" y="736" class="s">apb_wr(addr, wdata, strb): exp_err = 0</text>
+  <text x="50" y="754" class="s">apb_rd(addr, exp):</text>
+  <text x="50" y="768" class="s">    u_drv.apb_read + u_chk.expect_prdata</text>
+  <text x="50" y="786" class="s">read_reset_values: 8 x apb_rd</text>
+  <text x="50" y="804" class="s">init_test: u_log.init + u_chk.enable(1)</text>
+  <text x="50" y="822" class="s">end_test: u_log.summary + $finish</text>
+  <text x="50" y="840" class="s">timeout (TIMEOUT_NS = 200000):</text>
+  <text x="50" y="854" class="s">    u_log.error_msg + end_test</text>
+
+  <!-- ===== task calls ===== -->
+  <line class="c" x1="180" y1="520" x2="180" y2="640" marker-end="url(#arr)"/>
+  <text x="188" y="585" class="s">calls</text>
+  <line class="c" x1="320" y1="360" x2="350" y2="360"/>
+  <line class="c" x1="320" y1="700" x2="350" y2="700"/>
+  <line class="c" x1="350" y1="115" x2="350" y2="760"/>
+  <circle class="dot" cx="350" cy="300" r="4"/>
+  <circle class="dot" cx="350" cy="360" r="4"/>
+  <circle class="dot" cx="350" cy="620" r="4"/>
+  <circle class="dot" cx="350" cy="700" r="4"/>
+  <line class="c" x1="350" y1="115" x2="380" y2="115" marker-end="url(#arr)"/>
+  <line class="c" x1="350" y1="300" x2="380" y2="300" marker-end="url(#arr)"/>
+  <path class="c" d="M350,620 H780 V640" marker-end="url(#arr)"/>
+  <line class="c" x1="350" y1="760" x2="380" y2="760" marker-end="url(#arr)"/>
+
+  <!-- ===== u_drv ===== -->
+  <rect class="blk" x="380" y="200" width="200" height="320"/>
+  <text x="390" y="220" class="t">u_drv</text>
+  <text x="572" y="216" class="tag" text-anchor="end">sec 8</text>
+  <text x="390" y="237">tb_timer_top_drv</text>
+  <text x="390" y="253" class="s">APB master + dbg_mode</text>
+  <text x="390" y="280" class="s">drive_idle</text>
+  <text x="390" y="296" class="s">apb_write / apb_read</text>
+  <text x="390" y="310" class="s">  (apb_xfer: setup, access</text>
+  <text x="390" y="324" class="s">   until pready = 1)</text>
+  <text x="390" y="342" class="s">idle(n)</text>
+  <text x="390" y="358" class="s">set_idle_x(v): X bus while idle</text>
+  <text x="390" y="374" class="s">set_dbg_mode(v)</text>
+  <text x="390" y="470" class="s">drive at posedge + #1</text>
+  <text x="390" y="486" class="s">return at negedge</text>
+
+  <!-- DUT inputs -->
+  <line class="w" x1="580" y1="230" x2="760" y2="230" marker-end="url(#arr)"/>
+  <text x="588" y="225">tim_psel</text>
+  <line class="w" x1="580" y1="260" x2="760" y2="260" marker-end="url(#arr)"/>
+  <text x="588" y="255">tim_penable</text>
+  <line class="w" x1="580" y1="290" x2="760" y2="290" marker-end="url(#arr)"/>
+  <text x="588" y="285">tim_pwrite</text>
+  <line class="b" x1="580" y1="320" x2="760" y2="320" marker-end="url(#arr)"/>
+  <text x="588" y="314">tim_paddr[11:0]</text>
+  <line class="b" x1="580" y1="350" x2="760" y2="350" marker-end="url(#arr)"/>
+  <text x="588" y="344">tim_pwdata[31:0]</text>
+  <line class="b" x1="580" y1="380" x2="760" y2="380" marker-end="url(#arr)"/>
+  <text x="588" y="374">tim_pstrb[3:0]</text>
+  <line class="w" x1="580" y1="410" x2="760" y2="410" marker-end="url(#arr)"/>
+  <text x="588" y="405">dbg_mode</text>
+
+  <!-- monitor tap on the DUT inputs -->
+  <path class="b" d="M735,410 V185 H1210 V200" marker-end="url(#arr)"/>
+  <circle class="dot" cx="735" cy="230" r="4.5"/>
+  <circle class="dot" cx="735" cy="260" r="4.5"/>
+  <circle class="dot" cx="735" cy="290" r="4.5"/>
+  <circle class="dot" cx="735" cy="320" r="4.5"/>
+  <circle class="dot" cx="735" cy="350" r="4.5"/>
+  <circle class="dot" cx="735" cy="380" r="4.5"/>
+  <circle class="dot" cx="735" cy="410" r="4.5"/>
+  <text x="900" y="179">DUT inputs (7 nets, as applied)</text>
+
+  <!-- ===== u_dut ===== -->
+  <rect class="dut" x="760" y="200" width="250" height="320"/>
+  <text x="770" y="220" class="t">u_dut : timer_top</text>
+  <text x="1002" y="216" class="tag" text-anchor="end">sec 2</text>
+  <text x="770" y="237" class="s">rtl/ (sim/rtl.f)</text>
+  <rect class="sub" x="785" y="250" width="200" height="34"/>
+  <text x="885" y="272" text-anchor="middle">u_apb_slave</text>
+  <rect class="sub" x="785" y="295" width="200" height="34"/>
+  <text x="885" y="317" text-anchor="middle">u_register</text>
+  <rect class="sub" x="785" y="340" width="200" height="34"/>
+  <text x="885" y="362" text-anchor="middle">u_cnt_ctrl</text>
+  <rect class="sub" x="785" y="385" width="200" height="34"/>
+  <text x="885" y="407" text-anchor="middle">u_counter</text>
+  <rect class="sub" x="785" y="430" width="200" height="34"/>
+  <text x="885" y="452" text-anchor="middle">u_interrupt</text>
+  <text x="770" y="500" class="s">checked at the pins only (no internal probes)</text>
+
+  <!-- DUT outputs -->
+  <line class="b" x1="1010" y1="250" x2="1150" y2="250" marker-end="url(#arr)"/>
+  <text x="1016" y="244">tim_prdata[31:0]</text>
+  <line class="w" x1="1010" y1="300" x2="1150" y2="300" marker-end="url(#arr)"/>
+  <text x="1016" y="295">tim_pready</text>
+  <line class="w" x1="1010" y1="350" x2="1150" y2="350" marker-end="url(#arr)"/>
+  <text x="1016" y="345">tim_pslverr</text>
+  <line class="w" x1="1010" y1="400" x2="1150" y2="400" marker-end="url(#arr)"/>
+  <text x="1016" y="395">tim_int</text>
+
+  <!-- APB handshake back to the driver -->
+  <circle class="dot" cx="1110" cy="300" r="4"/>
+  <path class="w" d="M1110,300 V545 H600 V480 H580" marker-end="url(#arr)"/>
+  <text x="700" y="539">tim_pready -&gt; u_drv (APB handshake)</text>
+
+  <!-- ===== u_mon ===== -->
+  <rect class="blk" x="1150" y="200" width="240" height="320"/>
+  <text x="1160" y="220" class="t">u_mon</text>
+  <text x="1382" y="216" class="tag" text-anchor="end">sec 6</text>
+  <text x="1160" y="237">tb_timer_top_mon</text>
+  <text x="1160" y="264" class="s">samples every DUT pin at negedge</text>
+  <text x="1160" y="280" class="s">(inputs as applied, outputs settled)</text>
+  <text x="1160" y="430" class="s">-&gt; s_* samples, s_vld</text>
+  <text x="1160" y="446" class="s">(s_vld = 0 before the first edge)</text>
+
+  <!-- monitor samples -->
+  <path class="b" d="M1190,520 V590 H960 V640" marker-end="url(#arr)"/>
+  <text x="972" y="583">s_* (all pins) + s_vld</text>
+  <line class="b" x1="1330" y1="520" x2="1330" y2="640" marker-end="url(#arr)"/>
+  <text x="1322" y="570" text-anchor="end">s_* DUT inputs</text>
+
+  <!-- ===== u_model ===== -->
+  <rect class="blk" x="1150" y="640" width="240" height="250"/>
+  <text x="1160" y="660" class="t">u_model</text>
+  <text x="1382" y="656" class="tag" text-anchor="end">sec 5</text>
+  <text x="1160" y="677">tb_timer_top_model</text>
+  <text x="1160" y="693" class="s">golden reference model (spec)</text>
+  <text x="1160" y="716" class="s">never reads DUT outputs</text>
+  <text x="1160" y="734" class="s">APB: 1 wait state, TCR error</text>
+  <text x="1160" y="750" class="s">registers, byte strobes, RW1C</text>
+  <text x="1160" y="766" class="s">64-bit counter, divider, halt</text>
+  <text x="1160" y="782" class="s">TDR write ignored if TIM_EN = 1</text>
+  <text x="1160" y="798" class="s">tim_int = INT_ST &amp; INT_EN</text>
+
+  <!-- expected outputs -->
+  <line class="b" x1="1150" y1="700" x2="1010" y2="700" marker-end="url(#arr)"/>
+  <text x="1016" y="694">exp_prdata[31:0]</text>
+  <line class="w" x1="1150" y1="740" x2="1010" y2="740" marker-end="url(#arr)"/>
+  <text x="1016" y="735">exp_pready</text>
+  <line class="w" x1="1150" y1="780" x2="1010" y2="780" marker-end="url(#arr)"/>
+  <text x="1016" y="775">exp_pslverr</text>
+  <line class="w" x1="1150" y1="820" x2="1010" y2="820" marker-end="url(#arr)"/>
+  <text x="1016" y="815">exp_tim_int</text>
+
+  <!-- ===== u_chk ===== -->
+  <rect class="blk" x="760" y="640" width="250" height="250"/>
+  <text x="770" y="660" class="t">u_chk</text>
+  <text x="1002" y="656" class="tag" text-anchor="end">sec 6</text>
+  <text x="770" y="677">tb_timer_top_chk</text>
+  <text x="770" y="693" class="s">at negedge + CHK_DLY (1 ns)</text>
+  <text x="770" y="716" class="s">auto: model vs DUT, every sample</text>
+  <text x="770" y="730" class="s">    pready, pslverr, prdata, tim_int</text>
+  <text x="770" y="752" class="s">directed (VPLAN values):</text>
+  <text x="770" y="766" class="s">    enable, expect_prdata,</text>
+  <text x="770" y="780" class="s">    expect_pslverr, expect_reset_out</text>
+  <text x="770" y="802" class="s">cycle reference:</text>
+  <text x="770" y="816" class="s">    mark_e0, mark_now, expect_int_at</text>
+  <text x="770" y="838" class="s">compare with === (X / Z caught)</text>
+
+  <!-- results -->
+  <line class="c" x1="760" y1="760" x2="590" y2="760" marker-end="url(#arr)"/>
+  <text x="600" y="754" class="s">result / error_msg</text>
+
+  <!-- ===== u_log ===== -->
+  <rect class="blk" x="380" y="640" width="210" height="250"/>
+  <text x="390" y="660" class="t">u_log</text>
+  <text x="582" y="656" class="tag" text-anchor="end">sec 6</text>
+  <text x="390" y="677">tb_timer_top_log</text>
+  <text x="390" y="693" class="s">owns pass_count / fail_count</text>
+  <text x="390" y="716" class="s">init, item, sub1, sub2</text>
+  <text x="390" y="732" class="s">result (aligned columns)</text>
+  <text x="390" y="748" class="s">error_msg, summary</text>
+  <text x="390" y="794" class="s">[ITEM] / [SUBITEM1] / [SUBITEM2]</text>
+  <text x="390" y="810" class="s">[SUMMARY] PASS=n FAIL=n</text>
+  <text x="390" y="826" class="s">Test_result: PASSED | FAILED</text>
+
+  <!-- log file -->
+  <line class="c" x1="480" y1="890" x2="480" y2="965" marker-end="url(#arr)"/>
+  <rect class="seq" x="380" y="965" width="340" height="60"/>
+  <text x="390" y="986">sim/log/TC_TIMER_TOP_&lt;NNN&gt;.log</text>
+  <text x="390" y="1004" class="s">read by check_sim_log.py and sim/report.csh</text>
+
+  <!-- ===== legend ===== -->
+  <rect x="760" y="965" width="720" height="80" fill="none" stroke="#000" stroke-width="1"/>
+  <line class="w" x1="775" y1="984" x2="815" y2="984"/>
+  <text x="822" y="988" class="s">1-bit net</text>
+  <line class="b" x1="890" y1="984" x2="930" y2="984"/>
+  <text x="937" y="988" class="s">bus</text>
+  <line class="c" x1="985" y1="984" x2="1035" y2="984" marker-end="url(#arr)"/>
+  <text x="1042" y="988" class="s">task call (u_drv.*, u_chk.*, u_log.*, u_clk_rst.*)</text>
+  <circle class="dot" cx="1335" cy="984" r="4"/>
+  <text x="1345" y="988" class="s">junction</text>
+  <text x="775" y="1010" class="s">timing: stimulus at posedge + #1 | monitor at negedge | checker at negedge + CHK_DLY | CLK_PERIOD = 20 ns</text>
+  <text x="775" y="1032" class="s">dataflow: tc -&gt; u_drv -&gt; u_dut -&gt; u_mon -&gt; u_model -&gt; u_chk -&gt; u_log;  u_mon -&gt; u_chk</text>
+</svg>

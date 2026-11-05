@@ -2,50 +2,42 @@
 // TC_TIMER_TOP_001 - reg_init_chk
 // Objective: reset value of every register and output, and the asynchronous
 //            reset while counting with a pending interrupt
-//   Reset value check, Reset during operation (two levels)
+//   Reset value check      : reset, every register, no counting
+//   Reset during operation : counting with tim_int = 1, reset asserted
+//                            mid-cycle (no clock edge before the sample),
+//                            every register back to its reset value
+// Stimulus : the Test sequence of the VPLAN; no expected value here - u_chk
+//            checks every transfer and every sample against u_model.
 // Copied to sim/run_test.v and included inside tb_timer_top.
 // ============================================================================
   initial begin
-    init_test;
+    init_test("TC_TIMER_TOP_001",
+              "reset value of every register and output, asynchronous reset while counting with a pending interrupt");
     u_log.item("reg_init_chk");
     begin : reset_value_check
       u_log.sub1("Reset value check");
+      u_log.goal("sys_rst_n = 0 for 2 cycles: outputs 0 in reset, every register reads its reset value, no counting with TIM_EN = 0");
       reset_dut;
-      // Step 1: 2 cycles in reset, outputs checked without a clock edge
-      u_clk_rst.assert_reset;
-      u_chk.expect_reset_out("rst_n_0_cycle_1");
-      u_chk.expect_reset_out("rst_n_0_cycle_2");
-      u_clk_rst.release_reset;
-      // Step 2: every register
-      read_reset_values;
-      // Step 3: TIM_EN = 0, no counting
-      u_drv.idle(4);
-      apb_rd(ADDR_TDR0, 32'h0);
+      read_all_regs;
+      wait_cycles(4);
+      apb_read(ADDR_TDR0);
     end
     begin : reset_during_operation
       u_log.sub1("Reset during operation");
+      u_log.goal("counting up to the compare value 2 with INT_EN = 1, then sys_rst_n = 0 mid-cycle: outputs 0 without a clock edge, registers back to reset values");
       reset_dut;
-      // Step 1: compare value 2, interrupt enabled, counting
-      apb_wr(ADDR_TCMP0, 32'h2, 4'hF);
-      apb_wr(ADDR_TCMP1, 32'h0, 4'hF);
-      apb_wr(ADDR_TIER,  32'h1, 4'hF);
-      apb_wr(ADDR_TCR,   32'h0000_0001, 4'b0001);            // e0 follows
-      u_chk.mark_e0;
-      // Step 2: e0 .. e0+4, tim_int = 1 from e0+3
-      u_drv.idle(5);
-      for (i = 0; i <= 4; i = i + 1) begin
-        u_chk.expect_int_at(i, (i >= 3));
-      end
-      // Step 3: asynchronous reset after the cycle e0+4, 2 cycles
-      u_clk_rst.assert_reset;
-      u_chk.expect_reset_out("rst_n_0_no_clock_edge");
-      u_chk.expect_reset_out("rst_n_0_cycle_2");
-      u_clk_rst.release_reset;
-      // Step 4: reset values again
-      read_reset_values;
-      // Step 5
-      u_drv.idle(4);
-      apb_rd(ADDR_TDR0, 32'h0);
+      apb_write(ADDR_TCMP0, 32'h0000_0002, 4'b1111);
+      apb_write(ADDR_TCMP1, 32'h0000_0000, 4'b1111);
+      apb_write(ADDR_TIER,  32'h0000_0001, 4'b1111);
+      apb_write(ADDR_TCR,   32'h0000_0001, 4'b0001);    // TIM_EN = 1, e0 follows
+      wait_cycles(5);                                   // e0 .. e0+4
+      u_chk.checkpoint("before the reset");
+      reset_mid_cycle;
+      u_chk.checkpoint("right after sys_rst_n = 0, no rising edge");
+      release_reset;
+      read_all_regs;
+      wait_cycles(4);
+      apb_read(ADDR_TDR0);
     end
     end_test;
   end

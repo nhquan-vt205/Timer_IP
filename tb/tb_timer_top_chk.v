@@ -1,33 +1,51 @@
 // ============================================================================
 // Component : tb_timer_top_chk - checker of tb_timer_top
-// Inputs    : expected outputs from u_model, sampled pins from u_mon
-// Results   : every comparison goes to tb_timer_top.u_log.result
+// Inputs    : expected outputs exp_* from u_model, sampled pins, sample time
+//             and transfer status (s_done, s_wait, s_setup) from u_mon.
+//             Every expected value comes from the model; the test case never
+//             passes one.
+// Results   : tb_timer_top.u_log.check (counted) / info (not counted), with
+//             the time of the sample (falling edge), not the compare time.
+//             A deviation is one line: its short context is the note in
+//             parentheses after FAIL (no separate diagnosis line).
 // Timing    : handles each valid monitor sample at falling edge + CHK_DLY
 //             (sample and model outputs stable; stimulus only changes at
-//             posedge + #1), in this order:
-//   - sample index smp_cnt + 1 and tim_int history (for expect_int_at)
-//   - automatic check: every sample while enabled, the four outputs
-//     tim_pready, tim_pslverr, tim_prdata, tim_int (model vs DUT)
-//   - directed check : expect_prdata / expect_pslverr / expect_reset_out
-//                      compare VPLAN values with the next sample (the last
-//                      sample of a driver task that returned at this falling
-//                      edge) and return after the comparison
-// Cycle reference: mark_e0 / mark_now store the sample index of the VPLAN
-//             reference cycle (e0 = cycle after the current one, c1 = the
-//             current one); expect_int_at(n, exp) compares the tim_int
-//             sample of reference + n from the history, after that sample
-//             has been processed.
-// Ownership : auto_en (enable), dir_* request fields and dir_req
-//             (expect_*), dir_ack, smp_cnt and int_hist (compare process),
-//             ref_idx (mark_e0 / mark_now)
+//             posedge + #1):
+//   - transfer completion (s_done), one line per transfer:
+//       APB WRITE <REG> addr data strb OK|SLVERR   response as the model
+//         predicts (tim_pslverr, one wait state): event line, not a check -
+//         OK only says the transfer completed without an error response
+//       APB WRITE <REG> ... expected: <e> actual: <a> FAIL (<note>)
+//         response differs; note = wait cycles and setup clk, or the TCR
+//         error condition of the model
+//       APB READ <REG> addr expected: <e> actual: <a> PASS|FAIL [(<note>)]
+//         read data (TDR0/TDR1 as decimal counts when the Item checks
+//         counting, tb_timer_top.tdr_cnt_view; hex otherwise) and
+//         response; note = fields that differ (registers) or the response
+//         deviation; none for a count or an X/Z value
+//   - watch of every other sample: tim_pready, tim_pslverr, tim_prdata
+//       against the model, tim_int on every sample. Nothing is printed
+//       while they match. The first mismatch of an output prints one
+//       "[WATCH] <signal> (<bus situation>) expected: <e> actual: <a> FAIL"
+//       (one count); repeats of that output are only counted and closed
+//       by a [WATCH END] line (not counted) when it matches again; another
+//       output, or the same output after it matched again, prints its own
+//       FAIL
+//   - checkpoint(what): one "[CHECK] tim_int <what> ..." of the sample
+//       just processed (a moment the test case names), expected from the
+//       model
+//   - sync: the caller returns after this sample is processed
+// Ownership : compare process: bad, bad_n, bad_c, m_wait, m_done, last_*,
+//             sync_ack and the line variables; test sequence: sync_req
 // ============================================================================
 `timescale 1ns/1ps
 
 module tb_timer_top_chk #(
-  parameter CHK_DLY    = 1,
-  parameter HIST_DEPTH = 4096
+  parameter CHK_DLY = 1
 ) (
   input  wire        clk_i,
+  input  wire [31:0] clk_cnt_i,
+  input  wire [63:0] s_time_i,
   input  wire        s_rst_n_i,
   input  wire        s_psel_i,
   input  wire        s_penable_i,
@@ -39,6 +57,9 @@ module tb_timer_top_chk #(
   input  wire        s_pready_i,
   input  wire        s_pslverr_i,
   input  wire        s_tim_int_i,
+  input  wire        s_done_i,
+  input  wire [7:0]  s_wait_i,
+  input  wire [31:0] s_setup_i,
   input  wire        s_vld_i,
   input  wire [31:0] exp_prdata_i,
   input  wire        exp_pready_i,
@@ -46,199 +67,221 @@ module tb_timer_top_chk #(
   input  wire        exp_tim_int_i
 );
 
-  // Directed check kinds
-  localparam [1:0] K_PRDATA  = 2'd0;
-  localparam [1:0] K_PSLVERR = 2'd1;
-  localparam [1:0] K_RESET   = 2'd2;
+  localparam [9:0] W_TDR0 = 10'h001;
+  localparam [9:0] W_TDR1 = 10'h002;
 
-  reg             auto_en;
-  integer         dir_req;
-  integer         dir_ack;
-  reg  [1:0]      dir_kind;
-  reg  [31:0]     dir_exp;
-  reg  [8*64-1:0] dir_name;
-  integer         smp_cnt;
-  integer         ref_idx;
-  reg             int_hist [0:HIST_DEPTH-1];
-  reg  [8*64-1:0] base;
-  reg  [8*64-1:0] cname;
-  reg  [8*64-1:0] exp_s;
-  reg  [8*64-1:0] act_s;
+  integer          sync_req;
+  integer          sync_ack;
+  reg  [3:0]       bad;
+  integer          bad_n [0:3];
+  integer          bad_c [0:3];
+  integer          m_wait;
+  reg              m_done;
+  reg  [63:0]      last_t;
+  reg              last_e_int;
+  reg              last_a_int;
+  reg              acc;
+  reg              rsp_ok;
+  reg              dat_ok;
+  reg              is_cnt;
+  reg  [8*64-1:0]  tag;
+  reg  [8*200-1:0] txt;
+  reg  [8*80-1:0]  es;
+  reg  [8*80-1:0]  as;
+  reg  [8*120-1:0] nt;
+  reg  [8*200-1:0] m;
+  reg  [8*120-1:0] bd;
 
   initial begin
-    auto_en = 1'b0;
-    dir_req = 0;
-    dir_ack = 0;
-    smp_cnt = 0;
-    ref_idx = 0;
+    sync_req = 0;
+    sync_ack = 0;
+    bad      = 4'h0;
+    m_wait   = 0;
+    m_done   = 1'b0;
   end
 
-  // Turn the automatic per-cycle check on or off
-  task enable;
-    input on;
+  // ------------------------------------------------------------------
+  // Calls of the test sequence (through tb_timer_top)
+  // ------------------------------------------------------------------
+
+  // Returns after the sample of the current (or next) falling edge has
+  // been checked, so a following branch header owns only later checks
+  task sync;
     begin
-      auto_en = on;
+      sync_req = sync_req + 1;
+      wait (sync_ack == sync_req);
     end
   endtask
 
-  // Directed checks of VPLAN values against the next monitor sample
-  task expect_prdata;
-    input [8*64-1:0] name;
-    input [31:0]     exp;
+  // tim_int of the sample just processed against the model (call right
+  // after a sequence task). The test case names the moment only.
+  task checkpoint;
+    input [8*64-1:0] what;
     begin
-      dir_name = name;
-      dir_kind = K_PRDATA;
-      dir_exp  = exp;
-      dir_req  = dir_req + 1;
-      wait (dir_ack == dir_req);
+      $sformat(txt, "tim_int %0s", what);
+      tb_timer_top.u_log.check(last_t, "CHECK", txt, (last_a_int === last_e_int),
+                               tb_timer_top.u_log.fmt_bit(last_e_int),
+                               tb_timer_top.u_log.fmt_bit(last_a_int), 0, "");
     end
   endtask
 
-  task expect_pslverr;
-    input [8*64-1:0] name;
-    input            exp;
-    begin
-      dir_name = name;
-      dir_kind = K_PSLVERR;
-      dir_exp  = {31'h0, exp};
-      dir_req  = dir_req + 1;
-      wait (dir_ack == dir_req);
-    end
-  endtask
-
-  // All four outputs at their reset value 0
-  task expect_reset_out;
-    input [8*64-1:0] name;
-    begin
-      dir_name = name;
-      dir_kind = K_RESET;
-      dir_exp  = 32'h0;
-      dir_req  = dir_req + 1;
-      wait (dir_ack == dir_req);
-    end
-  endtask
-
-  // Reference cycle: e0 = the cycle after the current one (call right
-  // after the TCR write that sets TIM_EN), or the current cycle (c1)
-  task mark_e0;
-    begin
-      ref_idx = smp_cnt + 1;
-    end
-  endtask
-
-  task mark_now;
-    begin
-      ref_idx = smp_cnt;
-    end
-  endtask
-
-  // tim_int sampled in cycle reference + n against the VPLAN value; waits
-  // until the compare process has stored that sample (a driver task returns
-  // at the falling edge, before the sample of that edge is processed)
-  task expect_int_at;
-    input integer n;
-    input         exp;
-    begin
-      wait (smp_cnt >= ref_idx + n);
-      $sformat(cname, "ref_plus_%0d_vplan_tim_int", n);
-      if (smp_cnt - (ref_idx + n) >= HIST_DEPTH) begin
-        tb_timer_top.u_log.error_msg("[LOG ERROR] expect_int_at: cycle not in history");
-      end
-      else begin
-        cmp_bit(cname, exp, int_hist[(ref_idx + n) % HIST_DEPTH]);
-      end
-    end
-  endtask
-
-  // === comparison: X/Z in actual or expected is a FAIL
-  task cmp_word;
-    input [8*64-1:0] name;
-    input [31:0]     exp;
-    input [31:0]     act;
-    begin
-      $sformat(exp_s, "%h", exp);
-      $sformat(act_s, "%h", act);
-      tb_timer_top.u_log.result(name, (act === exp), exp_s, act_s);
-    end
-  endtask
-
-  task cmp_bit;
-    input [8*64-1:0] name;
-    input            exp;
-    input            act;
-    begin
-      $sformat(exp_s, "%h", exp);
-      $sformat(act_s, "%h", act);
-      tb_timer_top.u_log.result(name, (act === exp), exp_s, act_s);
-    end
-  endtask
-
-  // Case name of the automatic checks from the sampled inputs
-  task make_base;
+  // ------------------------------------------------------------------
+  // Bus situation of the current sample (context of a watch FAIL)
+  // ------------------------------------------------------------------
+  task bus_desc;
     begin
       if (s_rst_n_i !== 1'b1) begin
-        $sformat(base, "rst_n_0");
+        bd = "in reset";
+      end
+      else if (s_psel_i === 1'b0) begin
+        bd = "bus idle";
       end
       else if (s_psel_i !== 1'b1) begin
-        $sformat(base, "idle");
+        bd = "bus undriven";
       end
       else if (s_penable_i !== 1'b1) begin
-        if (s_pwrite_i) begin
-          $sformat(base, "setup_wr_%h_%h_s%h", s_paddr_i, s_pwdata_i, s_pstrb_i);
-        end
-        else begin
-          $sformat(base, "setup_rd_%h", s_paddr_i);
-        end
+        $sformat(bd, "setup of APB %0s %0s", s_pwrite_i ? "WRITE" : "READ",
+                 tb_timer_top.reg_name(s_paddr_i));
       end
       else begin
-        if (s_pwrite_i) begin
-          $sformat(base, "access_wr_%h_%h_s%h", s_paddr_i, s_pwdata_i, s_pstrb_i);
-        end
-        else begin
-          $sformat(base, "access_rd_%h", s_paddr_i);
-        end
+        $sformat(bd, "access cycle %0d of APB %0s %0s, setup clk=%0d", s_wait_i,
+                 s_pwrite_i ? "WRITE" : "READ", tb_timer_top.reg_name(s_paddr_i), s_setup_i);
       end
     end
   endtask
 
+  // ------------------------------------------------------------------
+  // Watch of one output on a sample that is not a transfer completion:
+  // silent while it matches; the first mismatch prints one FAIL line
+  // "[WATCH] <output> (<bus situation>) expected: <e> actual: <a> FAIL";
+  // repeats are counted and closed by one [WATCH END] line (not counted)
+  // ------------------------------------------------------------------
+  task watch;
+    input integer    k;
+    input [8*16-1:0] name;
+    input [31:0]     e;
+    input [31:0]     a;
+    input integer    wb;
+    begin
+      if (a !== e) begin
+        if (!bad[k]) begin
+          bad[k]   = 1'b1;
+          bad_n[k] = 1;
+          bad_c[k] = clk_cnt_i;
+          es = (wb == 1) ? tb_timer_top.u_log.fmt_bit(e[0]) : tb_timer_top.u_log.fmt_hex(e, wb);
+          as = (wb == 1) ? tb_timer_top.u_log.fmt_bit(a[0]) : tb_timer_top.u_log.fmt_hex(a, wb);
+          bus_desc;
+          $sformat(txt, "%0s (%0s)", name, bd);
+          tb_timer_top.u_log.check(s_time_i, "WATCH", txt, 1'b0, es, as, 0, "");
+        end
+        else begin
+          bad_n[k] = bad_n[k] + 1;
+        end
+      end
+      else if (bad[k]) begin
+        bad[k] = 1'b0;
+        $sformat(m, "%0s: %0d mismatching sample(s) clk=%0d..%0d, matches the model again",
+                 name, bad_n[k], bad_c[k], clk_cnt_i - 1);
+        tb_timer_top.u_log.info(s_time_i, "WATCH END", m);
+      end
+    end
+  endtask
+
+  // ------------------------------------------------------------------
+  // One transfer completion (DUT pready = 1 in an access cycle): one line
+  // ------------------------------------------------------------------
+  task check_txn;
+    begin
+      rsp_ok = (exp_pready_i === 1'b1) && (s_pslverr_i === exp_pslverr_i) && (s_wait_i == m_wait);
+      // Short context of a response deviation
+      if (s_wait_i != m_wait || exp_pready_i !== 1'b1) begin
+        $sformat(nt, "%0d wait, model %0d, setup clk=%0d", s_wait_i, m_wait, s_setup_i);
+      end
+      else if (s_pslverr_i !== exp_pslverr_i) begin
+        $sformat(nt, "tim_pslverr %b, %0s", s_pslverr_i, tb_timer_top.u_model.err_text(1'b0));
+      end
+      else begin
+        nt = "";
+      end
+      if (s_pwrite_i) begin
+        $sformat(tag, "APB WRITE %0s", tb_timer_top.reg_name(s_paddr_i));
+        $sformat(txt, "addr: %0s data: %0s strb: %0s", tb_timer_top.u_log.fmt_hex(s_paddr_i, 12),
+                 tb_timer_top.u_log.fmt_hex(s_pwdata_i, 32), tb_timer_top.u_log.fmt_bin(s_pstrb_i, 4));
+        if (rsp_ok) begin
+          $sformat(m, "%0s %0s", txt, (s_pslverr_i === 1'b1) ? "SLVERR" : "OK");
+          tb_timer_top.u_log.info(s_time_i, tag, m);
+        end
+        else if (s_pslverr_i !== exp_pslverr_i) begin
+          tb_timer_top.u_log.check(s_time_i, tag, txt, 1'b0, exp_pslverr_i ? "SLVERR" : "OK",
+                                   (s_pslverr_i === 1'b1) ? "SLVERR" :
+                                   (s_pslverr_i === 1'b0) ? "OK" : "X/Z", 0, nt);
+        end
+        else begin
+          $sformat(es, "%0d wait", m_wait);
+          $sformat(as, "%0d wait", s_wait_i);
+          tb_timer_top.u_log.check(s_time_i, tag, txt, 1'b0, es, as, 0, nt);
+        end
+      end
+      else begin
+        $sformat(tag, "APB READ %0s", tb_timer_top.reg_name(s_paddr_i));
+        $sformat(txt, "addr: %0s", tb_timer_top.u_log.fmt_hex(s_paddr_i, 12));
+        is_cnt = tb_timer_top.tdr_cnt_view &&
+                 ((s_paddr_i[11:2] == W_TDR0) || (s_paddr_i[11:2] == W_TDR1));
+        if (is_cnt) begin
+          es = tb_timer_top.u_log.fmt_cnt(exp_prdata_i, 32);
+          as = tb_timer_top.u_log.fmt_cnt(s_prdata_i, 32);
+        end
+        else begin
+          es = tb_timer_top.u_log.fmt_hex(exp_prdata_i, 32);
+          as = tb_timer_top.u_log.fmt_hex(s_prdata_i, 32);
+        end
+        dat_ok = (s_prdata_i === exp_prdata_i);
+        // A register (hex) mismatch names the fields; a count or an X/Z
+        // value needs nothing more than expected / actual
+        if (!dat_ok && !is_cnt && (^s_prdata_i) !== 1'bx && nt == 0) begin
+          $sformat(nt, "differ: %0s", tb_timer_top.field_names(s_paddr_i, s_prdata_i ^ exp_prdata_i));
+        end
+        tb_timer_top.u_log.check(s_time_i, tag, txt, dat_ok && rsp_ok, es, as, tb_timer_top.VAL_W, nt);
+      end
+    end
+  endtask
+
+  // ------------------------------------------------------------------
+  // Compare process
+  // ------------------------------------------------------------------
   always @(negedge clk_i) begin
     #(CHK_DLY);
     if (s_vld_i) begin
-      smp_cnt = smp_cnt + 1;
-      int_hist[smp_cnt % HIST_DEPTH] = s_tim_int_i;
-      if (auto_en) begin
-        make_base;
-        $sformat(cname, "%0s_pready", base);
-        cmp_bit(cname, exp_pready_i, s_pready_i);
-        $sformat(cname, "%0s_pslverr", base);
-        cmp_bit(cname, exp_pslverr_i, s_pslverr_i);
-        $sformat(cname, "%0s_prdata", base);
-        cmp_word(cname, exp_prdata_i, s_prdata_i);
-        $sformat(cname, "%0s_tim_int", base);
-        cmp_bit(cname, exp_tim_int_i, s_tim_int_i);
+      acc = (s_psel_i === 1'b1) && (s_penable_i === 1'b1);
+      // Wait cycles the model predicts for the transfer on the bus
+      if (acc && !m_done) begin
+        if (exp_pready_i === 1'b1) begin
+          m_done = 1'b1;
+        end
+        else begin
+          m_wait = m_wait + 1;
+        end
       end
-      if (dir_ack != dir_req) begin
-        case (dir_kind)
-          K_PRDATA: begin
-            cmp_word(dir_name, dir_exp, s_prdata_i);
-          end
-          K_PSLVERR: begin
-            cmp_bit(dir_name, dir_exp[0], s_pslverr_i);
-          end
-          default: begin
-            $sformat(cname, "%0s_pready", dir_name);
-            cmp_bit(cname, 1'b0, s_pready_i);
-            $sformat(cname, "%0s_pslverr", dir_name);
-            cmp_bit(cname, 1'b0, s_pslverr_i);
-            $sformat(cname, "%0s_prdata", dir_name);
-            cmp_word(cname, 32'h0, s_prdata_i);
-            $sformat(cname, "%0s_tim_int", dir_name);
-            cmp_bit(cname, 1'b0, s_tim_int_i);
-          end
-        endcase
-        dir_ack = dir_req;
+      if (s_done_i) begin
+        check_txn;
+        m_wait = 0;
+        m_done = 1'b0;
       end
+      else begin
+        watch(0, "tim_pready",  {31'h0, exp_pready_i},  {31'h0, s_pready_i},  1);
+        watch(1, "tim_pslverr", {31'h0, exp_pslverr_i}, {31'h0, s_pslverr_i}, 1);
+        watch(2, "tim_prdata",  exp_prdata_i,           s_prdata_i,           32);
+        if (!acc) begin
+          m_wait = 0;
+          m_done = 1'b0;
+        end
+      end
+      watch(3, "tim_int", {31'h0, exp_tim_int_i}, {31'h0, s_tim_int_i}, 1);
+      last_t     = s_time_i;
+      last_e_int = exp_tim_int_i;
+      last_a_int = s_tim_int_i;
     end
+    sync_ack = sync_req;
   end
 
 endmodule

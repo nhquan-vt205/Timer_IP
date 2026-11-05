@@ -1,22 +1,36 @@
 // ============================================================================
-// Component : tb_timer_top_drv - APB master and debug controller of
+// Component : tb_timer_top_drv - APB master and dbg_mode driver of
 //             tb_timer_top
 // Drives    : psel_o, penable_o, pwrite_o, paddr_o, pwdata_o, pstrb_o,
 //             dbg_mode_o -> DUT inputs (only driver of these nets)
-// Receives  : clk_i, pready_i (APB handshake, read at the falling edge)
-// Timing    : every change at posedge + #1. Each task covers whole cycles and
-//             returns at the falling edge of its last cycle, so the next call
-//             starts with the next cycle: transfers are back-to-back
-//             (tim_psel stays 1). An APB transfer is setup (psel = 1,
-//             penable = 0), then access (penable = 1) until pready_i = 1.
-//             set_idle_x(1) makes idle cycles drive X on the bus (master
-//             that leaves the bus undriven); reset_dut turns it off.
-// Called by : the test case and the sequence tasks of tb_timer_top
+// Receives  : clk_i, clk_cnt_i, pready_i (APB handshake, read at the falling
+//             edge only to know when the transfer ends - its timing is
+//             checked against the model by u_chk)
+// Timing    : every change at posedge + #1. Each task covers whole cycles
+//             and returns at the falling edge of its last cycle; the next
+//             call drives at the next posedge + #1 (back-to-back transfers
+//             keep tim_psel = 1, no idle cycle is inserted). Transfer: setup
+//             (psel 1, penable 0), then access (penable 1) until
+//             pready_i = 1, at most MAX_WAIT wait cycles ([TIMEOUT],
+//             transfer abandoned). A task that is not a transfer (idle,
+//             set_dbg_mode) drives the bus idle (0); idle_x leaves it
+//             undriven (X on every bus input, dbg_mode kept).
+// Log       : only inputs outside the bus, at the time they are applied:
+//             [DRIVE] dbg_mode old -> new (only on a real change), [WAIT]
+//             n cycles (bus idle or undriven); [TIMEOUT] of an abandoned
+//             transfer. An APB transfer
+//             is logged once, at its completion, by u_chk.
+// Called by : sequence tasks and reset_dut of tb_timer_top
+// Ownership : nwait, setup_c, k, msg (calls never overlap: one test
+//             sequence process)
 // ============================================================================
 `timescale 1ns/1ps
 
-module tb_timer_top_drv (
+module tb_timer_top_drv #(
+  parameter MAX_WAIT = 8
+) (
   input  wire        clk_i,
+  input  wire [31:0] clk_cnt_i,
   input  wire        pready_i,
   output reg         psel_o,
   output reg         penable_o,
@@ -27,21 +41,40 @@ module tb_timer_top_drv (
   output reg         dbg_mode_o
 );
 
-  // Idle cycles drive X on every bus input when set (undriven-bus
-  // scenario); written only by drive_idle and set_idle_x (test sequence)
-  reg idle_x;
+  integer          nwait;
+  integer          setup_c;
+  integer          k;
+  reg  [8*200-1:0] msg;
 
-  // Idle values and dbg_mode = 0 without waiting for an edge (reset only)
+  // Bus idle values, no edge (internal)
+  task bus_idle;
+    begin
+      psel_o    = 1'b0;
+      penable_o = 1'b0;
+      pwrite_o  = 1'b0;
+      paddr_o   = 12'h0;
+      pwdata_o  = 32'h0;
+      pstrb_o   = 4'h0;
+    end
+  endtask
+
+  // dbg_mode change, logged only when the value really changes
+  task drive_dbg;
+    input v;
+    begin
+      if (dbg_mode_o !== v && (dbg_mode_o === 1'b0 || dbg_mode_o === 1'b1)) begin
+        $sformat(msg, "dbg_mode: %b -> %b", dbg_mode_o, v);
+        tb_timer_top.u_log.info($time, "DRIVE", msg);
+      end
+      dbg_mode_o = v;
+    end
+  endtask
+
+  // Idle bus and dbg_mode = 0 without waiting for an edge (reset only)
   task drive_idle;
     begin
-      idle_x     = 1'b0;
-      psel_o     = 1'b0;
-      penable_o  = 1'b0;
-      pwrite_o   = 1'b0;
-      paddr_o    = 12'h0;
-      pwdata_o   = 32'h0;
-      pstrb_o    = 4'h0;
-      dbg_mode_o = 1'b0;
+      bus_idle;
+      drive_dbg(1'b0);
     end
   endtask
 
@@ -52,21 +85,36 @@ module tb_timer_top_drv (
     input [31:0] wdata;
     input [3:0]  strb;
     begin
+      // Setup phase
       @(posedge clk_i);
       #1;
+      setup_c   = clk_cnt_i;
       psel_o    = 1'b1;
       penable_o = 1'b0;
       pwrite_o  = wr;
       paddr_o   = addr;
-      pwdata_o  = wdata;
-      pstrb_o   = strb;
+      pwdata_o  = wr ? wdata : 32'h0;
+      pstrb_o   = wr ? strb : 4'h0;
+
+      // Access phase, held until pready
       @(posedge clk_i);
       #1;
       penable_o = 1'b1;
+      nwait = 0;
       @(negedge clk_i);
-      while (pready_i !== 1'b1) begin
+      while (pready_i !== 1'b1 && nwait < MAX_WAIT) begin
+        nwait = nwait + 1;
         @(posedge clk_i);
         #1;
+        @(negedge clk_i);
+      end
+      if (pready_i !== 1'b1) begin
+        $sformat(msg, "APB %0s %0s: no tim_pready = 1 in %0d access cycles (setup clk=%0d); transfer abandoned, bus idle",
+                 wr ? "WRITE" : "READ", tb_timer_top.reg_name(addr), MAX_WAIT + 1, setup_c);
+        tb_timer_top.u_log.error_msg($time, "TIMEOUT", msg);
+        @(posedge clk_i);
+        #1;
+        bus_idle;
         @(negedge clk_i);
       end
     end
@@ -88,50 +136,55 @@ module tb_timer_top_drv (
     end
   endtask
 
-  // n idle cycles: psel = 0, penable = 0, or every bus input X (idle_x)
+  // n idle cycles (bus idle, dbg_mode kept), one [WAIT] line
   task idle;
     input integer n;
-    integer k;
     begin
       for (k = 0; k < n; k = k + 1) begin
         @(posedge clk_i);
         #1;
-        if (idle_x) begin
-          psel_o    = 1'bx;
-          penable_o = 1'bx;
-          pwrite_o  = 1'bx;
-          paddr_o   = 12'hxxx;
-          pwdata_o  = 32'hxxxx_xxxx;
-          pstrb_o   = 4'hx;
-        end
-        else begin
-          psel_o    = 1'b0;
-          penable_o = 1'b0;
-          pwrite_o  = 1'b0;
-          paddr_o   = 12'h0;
-          pwdata_o  = 32'h0;
-          pstrb_o   = 4'h0;
+        bus_idle;
+        if (k == 0) begin
+          $sformat(msg, "%0d cycles, bus idle (clk=%0d..%0d)", n, clk_cnt_i, clk_cnt_i + n - 1);
+          tb_timer_top.u_log.info($time, "WAIT", msg);
         end
         @(negedge clk_i);
       end
     end
   endtask
 
-  // Undriven-bus idle cycles on (1) or off (0); no clock cycle
-  task set_idle_x;
-    input v;
+  // n cycles with an undriven bus (X on psel, penable, pwrite, paddr,
+  // pwdata, pstrb; dbg_mode kept), one [WAIT] line
+  task idle_x;
+    input integer n;
     begin
-      idle_x = v;
+      for (k = 0; k < n; k = k + 1) begin
+        @(posedge clk_i);
+        #1;
+        psel_o    = 1'bx;
+        penable_o = 1'bx;
+        pwrite_o  = 1'bx;
+        paddr_o   = 12'hxxx;
+        pwdata_o  = 32'hxxxx_xxxx;
+        pstrb_o   = 4'hx;
+        if (k == 0) begin
+          $sformat(msg, "%0d cycles, bus undriven: X on tim_psel .. tim_pstrb (clk=%0d..%0d)", n, clk_cnt_i, clk_cnt_i + n - 1);
+          tb_timer_top.u_log.info($time, "WAIT", msg);
+        end
+        @(negedge clk_i);
+      end
     end
   endtask
 
-  // dbg_mode for the following cycles; takes one cycle, bus unchanged
+  // dbg_mode from the next drive point (posedge + #1); that cycle has the
+  // bus idle, the next task drives at the following posedge + #1
   task set_dbg_mode;
     input v;
     begin
       @(posedge clk_i);
       #1;
-      dbg_mode_o = v;
+      bus_idle;
+      drive_dbg(v);
       @(negedge clk_i);
     end
   endtask
