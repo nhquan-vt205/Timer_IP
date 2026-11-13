@@ -205,7 +205,7 @@ module tb_timer_top_chk #(
       end
       if (s_pwrite_i) begin
         $sformat(tag, "APB WRITE %0s", tb_timer_top.reg_name(s_paddr_i));
-        $sformat(txt, "addr: %0s data: %0s strb: %0s", tb_timer_top.u_log.fmt_hex(s_paddr_i, 12),
+        $sformat(txt, "addr: %0s | data:     %0s | strb:       %0s", tb_timer_top.u_log.fmt_hex(s_paddr_i, 12),
                  tb_timer_top.u_log.fmt_hex(s_pwdata_i, 32), tb_timer_top.u_log.fmt_bin(s_pstrb_i, 4));
         if (rsp_ok) begin
           $sformat(m, "%0s %0s", txt, (s_pslverr_i === 1'b1) ? "SLVERR" : "OK");

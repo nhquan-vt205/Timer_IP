@@ -150,7 +150,7 @@ module tb_timer_top_log #(
       else begin
         $sformat(nt, " (%0s)", note);
       end
-      $display("%0s %0s %0sexpected: %0s actual: %0s %0s%0s", prefix(t), pad_right(tg, TAG_W), tx,
+      $display("%0s %0s %0s| expected: %0s | actual: %0s %0s%0s", prefix(t), pad_right(tg, TAG_W), tx,
                pad_left(exp_s, w), pad_left(act_s, w), (pass === 1'b1) ? "PASS" : "FAIL", nt);
     end
   endtask
