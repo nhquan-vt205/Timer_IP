@@ -1,9 +1,10 @@
 // ============================================================================
 // TC_TIMER_TOP_011 - interrupt_chk
 // Objective: compare match sets INT_ST one cycle later, tim_int = INT_ST &
-//            INT_EN, masking keeps INT_ST, write-1 clear, set again while the
-//            compare stays true
-//   Set, mask and clear : match while counting, mask / unmask, write 0 / 1
+//            INT_EN, masking keeps INT_ST, write-1 clear (byte 0 strobed only),
+//            set again while the compare stays true
+//   Set, mask and clear : match while counting, mask / unmask, write 0,
+//                         write 1 without byte 0 strobe, write 1
 //   Continuous match    : TIM_EN = 0, cnt = 0 = {TCMP1, TCMP0}
 // Stimulus : the Test sequence of the VPLAN; no expected value here - u_chk
 //            watches tim_int in every sample and checks every transfer
@@ -16,7 +17,7 @@
     u_log.item("interrupt_chk");
     begin : set_mask_and_clear
       u_log.sub1("Set, mask and clear");
-      u_log.goal("compare value 16 while counting: INT_ST set, counter keeps counting; INT_EN 0 masks tim_int and keeps INT_ST; writing 0 does nothing, writing 1 clears");
+      u_log.goal("compare value 16 while counting: INT_ST set, counter keeps counting; INT_EN 0 masks tim_int and keeps INT_ST; writing 0, or 1 without byte 0 strobe, does nothing; writing 1 clears");
       reset_dut;
       apb_write(ADDR_TCMP0, 32'h0000_0010, 4'b1111);
       apb_write(ADDR_TCMP1, 32'h0000_0000, 4'b1111);
@@ -33,6 +34,9 @@
       apb_write(ADDR_TISR,  32'h0000_0000, 4'b0001);    // write 0
       apb_read(ADDR_TISR);
       u_chk.checkpoint("after writing 0 to INT_ST");
+      apb_write(ADDR_TISR,  32'h0000_0001, 4'b1110);    // write 1, byte 0 not strobed
+      apb_read(ADDR_TISR);
+      u_chk.checkpoint("after writing 1 to INT_ST without byte 0 strobe");
       apb_write(ADDR_TISR,  32'h0000_0001, 4'b0001);    // write 1
       apb_read(ADDR_TISR);
       u_chk.checkpoint("after writing 1 to INT_ST");
